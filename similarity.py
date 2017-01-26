@@ -6,7 +6,6 @@ import cv2
 from os import path
 from glob import glob
 
-
 matchIm= {}; #Lo necesitamos poner aqui para que se guarden de forma global todas las imagenes,
 # de la otra forma como se hace referencia de forma recursiva la variable se reinicia cada vez que se mete en una carpeta nueva
 #En esta diccionario guardamos las rutas de las imagenes que han obtenido alto % de coincidencia con la que hemos pasado y el % que tienen.
@@ -103,9 +102,10 @@ def similarityDataSet(carp):
         Creo que lo tenemos que vaciar por que lo hemos puesto como una variable de la clase entonces se quedan los datos guardados desde la primera ejecucion
         y entonces lo que nos muestra no es lo que deberia ya que lo compara con los datos que tenia de la anterior ejecucion
         '''
+        matchIm = {}
+
         dir2 = glob(im + "/" + "*")
         for p in dir2:
-            matchIm = {}
             print similarityImage(carp, p) + " prueba"
 
 
