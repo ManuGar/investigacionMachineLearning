@@ -105,7 +105,6 @@ def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar/guardar l
     print "\n"
     print accuracy_score(y_true,y_pred)
 
-
 if __name__ == "__main__":  # Asi se ejecutan los scripts
 
     ap = argparse.ArgumentParser()
