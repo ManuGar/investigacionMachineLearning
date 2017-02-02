@@ -4,8 +4,9 @@ from glob import glob
 from sklearn.metrics import classification_report, confusion_matrix,accuracy_score, precision_score
 from sklearn.model_selection import train_test_split
 import argparse
-import numpy as np
 import cv2
+import numpy as np
+import pandas as pd
 
 
  #Lo necesitamos poner aqui para que se guarden de forma global todas las imagenes,
@@ -100,10 +101,21 @@ def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar/guardar l
     print "\n"
     print "These are the real type of the images"
     print y_true
-    print(classification_report(y_true, y_pred, target_names=target_names))
-    print confusion_matrix(y_true, y_pred, labels=target_names)
+    classi_rep=classification_report(y_true, y_pred, target_names=target_names)
+    print(classi_rep)
+    conf_mat=confusion_matrix(y_true, y_pred, labels=target_names)
+    print conf_mat
     print "\n"
     print accuracy_score(y_true,y_pred)
+
+    results = pd.DataFrame(
+        {
+            'classification_report':[classi_rep],
+            'confusion_matrix':[conf_mat],
+            'accuracy_score':[accuracy_score(y_true,y_pred)]
+        }
+    )
+    results.to_csv('resultados.csv')
 
 
 if __name__ == "__main__":  # Asi se ejecutan los scripts
