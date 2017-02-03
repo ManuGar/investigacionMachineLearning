@@ -7,6 +7,7 @@ import argparse
 import cv2
 import numpy as np
 import pandas as pd
+import os
 
 
  #Lo necesitamos poner aqui para que se guarden de forma global todas las imagenes,
@@ -77,8 +78,7 @@ momento consigo misma.
 
 def similarityDataSet(carp):
     di = glob(carp + "/" + "*")  # vemos todo lo que esta adentro del directorio que nos manden
-    vectorExpectedType=[]
-    vectorRealType=[]
+
     images=[]
     target_names = ['AK-30', 'AMC-30', 'AMP-10', "Error"]
 
@@ -86,6 +86,8 @@ def similarityDataSet(carp):
         images+=(glob(j + "/" + "*"))
 
     for i in range (0,10):
+        vectorExpectedType = []
+        vectorRealType = []
         (X_train,_,images_test,_)=train_test_split(images,np.zeros(len(images)),test_size=0.25,random_state=i)
         for j in X_train:
             vectorExpectedType.append(similarityImage(X_train,j))
@@ -115,7 +117,11 @@ def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar/guardar l
             'accuracy_score':[accuracy_score(y_true,y_pred)]
         }
     )
-    results.to_csv('resultados.csv')
+    if not os.path.isfile('resultados.csv'):
+        results.to_csv('resultados.csv', index=False)
+    else:  # else it exists so append without writing the header
+        results.to_csv('resultados.csv', index=False, mode='a', header=False)
+
 
 
 if __name__ == "__main__":  # Asi se ejecutan los scripts
