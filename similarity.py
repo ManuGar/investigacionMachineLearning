@@ -2,7 +2,7 @@ from detectanddescribe import DetectAndDescribe
 from diskMatcher import DiskMatcher
 from glob import glob
 from sklearn.metrics import classification_report, confusion_matrix,accuracy_score, precision_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold
 import argparse
 import cv2
 import numpy as np
@@ -10,27 +10,28 @@ import pandas as pd
 import os
 
 
- #Lo necesitamos poner aqui para que se guarden de forma global todas las imagenes,
+
+#Lo necesitamos poner aqui para que se guarden de forma global todas las imagenes,
 # de la otra forma como se hace referencia de forma recursiva la variable se reinicia cada vez que se mete en una carpeta nueva
 #En esta diccionario guardamos las rutas de las imagenes que han obtenido alto % de coincidencia con la que hemos pasado y el % que tienen.
 
-def similarityImage(imageVector,img):  # funcion principal
+
+def similarityImage(imageVector,img, featureDetector, descriptorExtractor, diskMatcher):  # funcion principal
     matchIm = {}
     maxItems=5 #Este es el numero maximo de elementos que vamos a permitir en el diccionario de los resultados
 
-    dad = DetectAndDescribe(cv2.FeatureDetector_create("FAST"),
-                            cv2.DescriptorExtractor_create("FREAK"))
+    dad = DetectAndDescribe(cv2.FeatureDetector_create(featureDetector),
+                            cv2.DescriptorExtractor_create(descriptorExtractor))
 
     queryImage = cv2.imread(img) #Leemos la imagen pasada como parametro
     (_, _, v) = cv2.split(cv2.cvtColor(queryImage, cv2.COLOR_BGR2HSV))
 
     (queryKps, queryDescs) = dad.describe(v);  # En v tenemos la imagen que estamos comparando en cada iteracion con el resto de imagenes de la carpeta
 
-
     #for j in di:  # Recorremos el directorio, solo va a haber carpetas dentro por lo que j siempre sera una carpeta y asi evitamos comprobaciones de si es un archivo
     #   di2 = glob(j + "/" + "*") #Como dentro solo vamos a tener directorios con las clases de las imagenes, hacemos lo mismo que al principio
-        # guardamamos la ruta de la carpeta en la que estamos en ese momento. En ese momento tenemo un array con todas las imagenes que estan dentro de esa carpeta
-    cv = DiskMatcher(dad, imageVector, "BruteForce-Hamming") #Comparamos todas las imagenes dentro de la carpeta de la clase de ese momento
+    # guardamamos la ruta de la carpeta en la que estamos en ese momento. En ese momento tenemo un array con todas las imagenes que estan dentro de esa carpeta
+    cv = DiskMatcher(dad, imageVector, diskMatcher) #Comparamos todas las imagenes dentro de la carpeta de la clase de ese momento
     # y le pasamos como parametro precisamente la carpeta de la clase actual (Ej: Ak-30) para hacer la comparacion
     results = cv.search(queryKps, queryDescs); #Guardamos el vector con todos los resultados de la comparacion de la imagen con las de dentro de la carpeta
 
@@ -76,40 +77,66 @@ de todas las imagenes del data set. Tendremos que eliminar el caso de comparacio
 momento consigo misma.
 '''
 
-def similarityDataSet(carp):
+def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     di = glob(carp + "/" + "*")  # vemos todo lo que esta adentro del directorio que nos manden
 
     images=[]
-    target_names = ['AK-30', 'AMC-30', 'AMP-10', "Error"]
+    target_names = []
+
 
     for j in di:
+        target_names.append(j.split("/")[-1])# 'AK-30', 'AMC-30', 'AMP-10', "Error"
         images+=(glob(j + "/" + "*"))
 
-    for i in range (0,10):
+    target_names.append("Error")
+
+    '''
+    Para hacer la prueba 10 veces lo que podemos es hacer es crear un bucle que vaya de uno a diez o mediante
+    la funcion Kfold de sklearn
+
+    ESTO NO FUNCIONA TODAVIA
+
+    kf= KFold(n_splits=10, shuffle=True, random_state=42)
+    vectorExpectedType = []
+    vectorRealType = []
+    (X_train, images_test, _, _) = train_test_split(images, np.zeros(len(images)), test_size=0.25, random_state=42)
+    for X_train, images_test in kf.split(images):
+        vectorExpectedType.append(similarityImage(X_train, j, featureDetector, descriptorExtractor, diskMatcher))
+        vectorRealType.append(j.split("/")[1])
+        comprobeResults(vectorRealType, vectorExpectedType, target_names)
+
+    '''
+
+    for i in range(0, 10):
         vectorExpectedType = []
         vectorRealType = []
-        (X_train,_,images_test,_)=train_test_split(images,np.zeros(len(images)),test_size=0.25,random_state=i)
-        for j in X_train:
-            vectorExpectedType.append(similarityImage(X_train,j))
+        (X_train, images_test, _, _) = train_test_split(images, np.zeros(len(images)), test_size=0.25, random_state=i)
+        for j in images_test:
+            vectorExpectedType.append(similarityImage(X_train, j, featureDetector, descriptorExtractor, diskMatcher))
             vectorRealType.append(j.split("/")[1])
 
         comprobeResults(vectorRealType, vectorExpectedType, target_names)
 
 
 
-def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar/guardar los datos despues de haber hecho la comparacion de las imagenes
+def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar y guardar los datos en .csv despues de haber hecho la comparacion de las imagenes
     print "These are the predicted type of the images"
     print y_pred
-    print "\n"
+    print("\n")
     print "These are the real type of the images"
     print y_true
     classi_rep=classification_report(y_true, y_pred, target_names=target_names)
     print(classi_rep)
     conf_mat=confusion_matrix(y_true, y_pred, labels=target_names)
     print conf_mat
+
     print "\n"
     print accuracy_score(y_true,y_pred)
 
+    '''
+    Con esto conseguimos guardar todos los datos en una estructura de pandas y una vez tenemos la estructura lo que hacemos es crear
+    un archivo csv si no estaba creado y si lo estaba aniadirle los datos
+    '''
     results = pd.DataFrame(
         {
             'classification_report':[classi_rep],
@@ -117,29 +144,26 @@ def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar/guardar l
             'accuracy_score':[accuracy_score(y_true,y_pred)]
         }
     )
-    if not os.path.isfile('resultados.csv'):
-        results.to_csv('resultados.csv', index=False)
+    if not os.path.isfile('results.csv'):
+        results.to_csv('results.csv', index=False)
     else:  # else it exists so append without writing the header
-        results.to_csv('resultados.csv', index=False, mode='a', header=False)
-
-
+        results.to_csv('results.csv', index=False, mode='a', header=False)
 
 if __name__ == "__main__":  # Asi se ejecutan los scripts
+    np.who()
 
     ap = argparse.ArgumentParser()
     ap.add_argument("-d", "--disks", required=False, help="Path to the directory that contains our disks",
                     default="discPrueba")  # "images/a1.tif"
+    '''
     ap.add_argument("-i", "--image", required=False, help="Path to the image that we want to compare",
                     default="20160602_170338ImgDisk1.tif")
+    '''
     args = vars(ap.parse_args())
 
-
     #match=similarityImage(args["disks"], args["image"]);
-
+    featureDetector="FAST"
+    descriptorExtractor="FREAK"
+    diskMatcher= "BruteForce-Hamming"
     #Esto es para comprobar si lo que hemos obtenido se acerca a lo que deberiamos obtener
-    similarityDataSet(args["disks"])
-    '''
-    (vectorEsp,vectorRe)= similarityDataSet(args["disks"]);
-    target_names = ['AK-30', 'AMC-30', 'AMP-10',"Error"]
-    comprobeResults(vectorRe,vectorEsp,target_names)
-    '''
+    similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
