@@ -91,7 +91,9 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     la comparacion.
     '''
 
+
     kf= KFold(n_splits=n_splits, shuffle=True, random_state=42)
+    accuracy_scores=[]
     for train_index, test_index in kf.split(images):
         start_time = time()
         vectorExpectedType = []
@@ -107,6 +109,9 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
         comprobeResults(vectorRealType, vectorExpectedType, target_names)
         tiempo_iteracion = time() - start_time
         tiempo_total+=tiempo_iteracion
+        accuracy_scores.append(accuracy_score(vectorRealType, vectorExpectedType))
+    #Da error al crearlo
+    createCSV(accuracy_scores)
 
     '''
     for i in range(0, n_splits):
@@ -143,12 +148,14 @@ def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar y guardar
     Con esto conseguimos guardar todos los datos en una estructura de pandas y una vez tenemos la estructura lo que hacemos es crear
     un archivo csv si no estaba creado y si lo estaba aniadirle los datos
     '''
+
+
+def createCSV(accuracy_scores):
+    ''' Acumular el accurancy_score en un vector y lo pasamos al csv al final para hacer solo una tarea de entrada/salida'''
     results = pd.DataFrame(
         {
-            'classification_report':[classi_rep],
-            'confusion_matrix':[conf_mat],
-            'accuracy_score':[accuracy_score(y_true,y_pred)]
-        }
+            accuracy_scores
+        },index=["prueba"]
     )
     if not os.path.isfile('results.csv'):
         results.to_csv('results.csv', index=False)
@@ -158,7 +165,7 @@ def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar y guardar
 if __name__ == "__main__":  # Asi se ejecutan los scripts
     ap = argparse.ArgumentParser()
     ap.add_argument("-d", "--disks", required=False, help="Path to the directory that contains our disks",
-                    default="discosSegmented")
+                    default="discPrueba")
     '''
     ap.add_argument("-i", "--image", required=False, help="Path to the image that we want to compare",
                     default="20160602_170338ImgDisk1.tif")
