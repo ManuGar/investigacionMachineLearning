@@ -117,8 +117,6 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
         tiempo_iteracion = time() - start_time
         tiempo_total+=tiempo_iteracion
 
-    print "El tiempo medio de la ejecucion de las iteraciones ha sido: " + str(tiempo_total/kf.n_splits)
-
     '''
     for i in range(0, n_splits):
         start_time = time()
@@ -135,6 +133,8 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
         tiempo_total+=tiempo_iteracion
         print "El tiempo total de la ejecucion del programa ha sido: " + str(tiempo_total)
     '''
+    print "El tiempo medio de la ejecucion de las iteraciones ha sido: " + str(tiempo_total/n_splits)
+
 
 
 def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar y guardar los datos en .csv despues de haber hecho la comparacion de las imagenes
