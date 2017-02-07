@@ -3,6 +3,7 @@ from diskMatcher import DiskMatcher
 from glob import glob
 from sklearn.metrics import classification_report, confusion_matrix,accuracy_score, precision_score
 from sklearn.model_selection import train_test_split, KFold
+from time import time
 import argparse
 import cv2
 import numpy as np
@@ -78,12 +79,11 @@ momento consigo misma.
 '''
 
 def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
+    tiempo_total = 0
+    n_splits=10
     di = glob(carp + "/" + "*")  # vemos todo lo que esta adentro del directorio que nos manden
-
     images=[]
     target_names = []
-
-
     for j in di:
         target_names.append(j.split("/")[-1])# 'AK-30', 'AMC-30', 'AMP-10', "Error"
         images+=(glob(j + "/" + "*"))
@@ -94,20 +94,34 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     Para hacer la prueba 10 veces lo que podemos es hacer es crear un bucle que vaya de uno a diez o mediante
     la funcion Kfold de sklearn
 
-    ESTO NO FUNCIONA TODAVIA
-
-    kf= KFold(n_splits=10, shuffle=True, random_state=42)
-    vectorExpectedType = []
-    vectorRealType = []
-    (X_train, images_test, _, _) = train_test_split(images, np.zeros(len(images)), test_size=0.25, random_state=42)
-    for X_train, images_test in kf.split(images):
-        vectorExpectedType.append(similarityImage(X_train, j, featureDetector, descriptorExtractor, diskMatcher))
-        vectorRealType.append(j.split("/")[1])
-        comprobeResults(vectorRealType, vectorExpectedType, target_names)
-
+    Con Kfold es un poco mas largo pero parece un poco mas rapido tambien. Con esto lo que hacemos es generar
+    un vector con los indices que queremos en entrenamiento y las que queremos en test. Luego creamos un vector
+    de las imagenes de entrenamiento a partir de los indices y recorremos el vector de las de test para hacer
+    la comparacion.
     '''
 
-    for i in range(0, 10):
+    kf= KFold(n_splits=n_splits, shuffle=True, random_state=42)
+    for train_index, test_index in kf.split(images):
+        start_time = time()
+        vectorExpectedType = []
+        vectorRealType = []
+        train_images=[]
+        for i in train_index:
+            train_images.append(images[i])
+
+        for index in test_index:
+            vectorExpectedType.append(similarityImage(train_images, images[index], featureDetector, descriptorExtractor, diskMatcher))
+            vectorRealType.append(images[index].split("/")[1])
+
+        comprobeResults(vectorRealType, vectorExpectedType, target_names)
+        tiempo_iteracion = time() - start_time
+        tiempo_total+=tiempo_iteracion
+
+    print "El tiempo medio de la ejecucion de las iteraciones ha sido: " + str(tiempo_total/kf.n_splits)
+
+    '''
+    for i in range(0, n_splits):
+        start_time = time()
         vectorExpectedType = []
         vectorRealType = []
         (X_train, images_test, _, _) = train_test_split(images, np.zeros(len(images)), test_size=0.25, random_state=i)
@@ -116,7 +130,11 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
             vectorRealType.append(j.split("/")[1])
 
         comprobeResults(vectorRealType, vectorExpectedType, target_names)
-
+        tiempo_iteracion = time() - start_time
+        print "El tiempo de esta iteracion es: " + str(tiempo_iteracion)
+        tiempo_total+=tiempo_iteracion
+        print "El tiempo total de la ejecucion del programa ha sido: " + str(tiempo_total)
+    '''
 
 
 def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar y guardar los datos en .csv despues de haber hecho la comparacion de las imagenes
