@@ -15,8 +15,6 @@ import os
 #Lo necesitamos poner aqui para que se guarden de forma global todas las imagenes,
 # de la otra forma como se hace referencia de forma recursiva la variable se reinicia cada vez que se mete en una carpeta nueva
 #En esta diccionario guardamos las rutas de las imagenes que han obtenido alto % de coincidencia con la que hemos pasado y el % que tienen.
-
-
 def similarityImage(imageVector,img, featureDetector, descriptorExtractor, diskMatcher):  # funcion principal
     matchIm = {}
     maxItems=5 #Este es el numero maximo de elementos que vamos a permitir en el diccionario de los resultados
@@ -26,21 +24,15 @@ def similarityImage(imageVector,img, featureDetector, descriptorExtractor, diskM
 
     queryImage = cv2.imread(img) #Leemos la imagen pasada como parametro
     (_, _, v) = cv2.split(cv2.cvtColor(queryImage, cv2.COLOR_BGR2HSV))
-
     (queryKps, queryDescs) = dad.describe(v);  # En v tenemos la imagen que estamos comparando en cada iteracion con el resto de imagenes de la carpeta
-
-    #for j in di:  # Recorremos el directorio, solo va a haber carpetas dentro por lo que j siempre sera una carpeta y asi evitamos comprobaciones de si es un archivo
-    #   di2 = glob(j + "/" + "*") #Como dentro solo vamos a tener directorios con las clases de las imagenes, hacemos lo mismo que al principio
-    # guardamamos la ruta de la carpeta en la que estamos en ese momento. En ese momento tenemo un array con todas las imagenes que estan dentro de esa carpeta
-    cv = DiskMatcher(dad, imageVector, diskMatcher) #Comparamos todas las imagenes dentro de la carpeta de la clase de ese momento
-    # y le pasamos como parametro precisamente la carpeta de la clase actual (Ej: Ak-30) para hacer la comparacion
+    cv = DiskMatcher(dad, imageVector, diskMatcher) #Comparamos todas las imagenes dentro del vector de imagenes que le pasamos como parametro
     results = cv.search(queryKps, queryDescs); #Guardamos el vector con todos los resultados de la comparacion de la imagen con las de dentro de la carpeta
 
     if len(results) != 0:
         for (i, (score, diskPath)) in enumerate(results): #Recorremos el vector de resultados para aniadir solo las que tengan un % mas alto,
              # el limite de elementos lo ponemos en maxItems
             if (score >= 0.65 ):
-                if (len(matchIm) < maxItems): #Solo queremos las 5 fotos que mas se parezcan a nuestra imagen
+                if (len(matchIm) < maxItems): #Solo queremos las maxItems(5) fotos que mas se parezcan a nuestra imagen
                     matchIm[diskPath] = score;
                 else:
                     minvalue = min(matchIm.values());
@@ -77,7 +69,6 @@ En este programa cogeremos lo que hace similarity y lo llevaremos a un ambito ma
 de todas las imagenes del data set. Tendremos que eliminar el caso de comparacion de la imagen que estamos usando en ese
 momento consigo misma.
 '''
-
 def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     tiempo_total = 0
     n_splits=10
@@ -136,7 +127,6 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     print "El tiempo medio de la ejecucion de las iteraciones ha sido: " + str(tiempo_total/n_splits)
 
 
-
 def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar y guardar los datos en .csv despues de haber hecho la comparacion de las imagenes
     print "These are the predicted type of the images"
     print y_pred
@@ -147,10 +137,8 @@ def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar y guardar
     print(classi_rep)
     conf_mat=confusion_matrix(y_true, y_pred, labels=target_names)
     print conf_mat
-
     print "\n"
     print accuracy_score(y_true,y_pred)
-
     '''
     Con esto conseguimos guardar todos los datos en una estructura de pandas y una vez tenemos la estructura lo que hacemos es crear
     un archivo csv si no estaba creado y si lo estaba aniadirle los datos
@@ -168,17 +156,14 @@ def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar y guardar
         results.to_csv('results.csv', index=False, mode='a', header=False)
 
 if __name__ == "__main__":  # Asi se ejecutan los scripts
-    np.who()
-
     ap = argparse.ArgumentParser()
     ap.add_argument("-d", "--disks", required=False, help="Path to the directory that contains our disks",
-                    default="discPrueba")  # "images/a1.tif"
+                    default="discosSegmented")
     '''
     ap.add_argument("-i", "--image", required=False, help="Path to the image that we want to compare",
                     default="20160602_170338ImgDisk1.tif")
     '''
     args = vars(ap.parse_args())
-
     #match=similarityImage(args["disks"], args["image"]);
     featureDetector="FAST"
     descriptorExtractor="FREAK"
