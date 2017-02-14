@@ -151,16 +151,17 @@ def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar y guardar
 
 
 def createCSV(accuracy_scores):
-    ''' Acumular el accurancy_score en un vector y lo pasamos al csv al final para hacer solo una tarea de entrada/salida'''
-    results = pd.DataFrame(
-        {
-            accuracy_scores
-        },index=["prueba"]
-    )
+    ''' Acumular el accurancy_score en un vector y lo pasamos al csv al final para hacer solo una tarea de entrada/salida
+        Los datos se guardan en results y se aniaden a un dataframe que se creamos con la orientacion que necesitamos para
+        ver mejor todos los datos de las pruebas
+    '''
+    results = [('BruteForce-Hamming' , accuracy_scores)]
+    df = pd.DataFrame.from_items(results,orient='index',columns=range(0,10))
     if not os.path.isfile('results.csv'):
-        results.to_csv('results.csv', index=False)
+        df.to_csv('results.csv')
     else:  # else it exists so append without writing the header
-        results.to_csv('results.csv', index=False, mode='a', header=False)
+        df.to_csv('results.csv', mode='a', header=False)
+
 
 if __name__ == "__main__":  # Asi se ejecutan los scripts
     ap = argparse.ArgumentParser()
@@ -177,3 +178,4 @@ if __name__ == "__main__":  # Asi se ejecutan los scripts
     diskMatcher= "BruteForce-Hamming"
     #Esto es para comprobar si lo que hemos obtenido se acerca a lo que deberiamos obtener
     similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
+
