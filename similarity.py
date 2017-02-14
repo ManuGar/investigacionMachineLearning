@@ -90,8 +90,6 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     de las imagenes de entrenamiento a partir de los indices y recorremos el vector de las de test para hacer
     la comparacion.
     '''
-
-
     kf= KFold(n_splits=n_splits, shuffle=True, random_state=42)
     accuracy_scores=[]
     for train_index, test_index in kf.split(images):
@@ -156,7 +154,7 @@ def createCSV(accuracy_scores):
         ver mejor todos los datos de las pruebas
     '''
     results = [('BruteForce-Hamming' , accuracy_scores)]
-    df = pd.DataFrame.from_items(results,orient='index',columns=range(0,10))
+    df = pd.DataFrame.from_items(results,orient='index',columns=range(0,len(accuracy_scores)))
     if not os.path.isfile('results.csv'):
         df.to_csv('results.csv')
     else:  # else it exists so append without writing the header
