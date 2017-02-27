@@ -109,7 +109,7 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
         tiempo_total+=tiempo_iteracion
         accuracy_scores.append(accuracy_score(vectorRealType, vectorExpectedType))
     #Da error al crearlo
-    createCSV(accuracy_scores)
+    createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher)
 
     '''
     for i in range(0, n_splits):
@@ -148,12 +148,12 @@ def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar y guardar
     '''
 
 
-def createCSV(accuracy_scores):
+def createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher):
     ''' Acumular el accurancy_score en un vector y lo pasamos al csv al final para hacer solo una tarea de entrada/salida
         Los datos se guardan en results y se aniaden a un dataframe que se creamos con la orientacion que necesitamos para
         ver mejor todos los datos de las pruebas
     '''
-    results = [('BruteForce-Hamming' , accuracy_scores)]
+    results = [(featureDetector + "-" + descriptorExtractor + "-" + diskMatcher , accuracy_scores)]
     df = pd.DataFrame.from_items(results,orient='index',columns=range(0,len(accuracy_scores)))
     if not os.path.isfile('results.csv'):
         df.to_csv('results.csv')
