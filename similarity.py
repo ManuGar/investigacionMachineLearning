@@ -1,12 +1,12 @@
 from detectanddescribe import DetectAndDescribe
 from diskMatcher import DiskMatcher
 from glob import glob
-from sklearn.metrics import classification_report, confusion_matrix,accuracy_score, precision_score
+from sklearn.metrics import classification_report, confusion_matrix,accuracy_score
 from sklearn.model_selection import train_test_split, KFold
 from time import time
+from multiprocessing import Pool
 import argparse
 import cv2
-import numpy as np
 import pandas as pd
 import os
 
@@ -92,23 +92,18 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     '''
     kf= KFold(n_splits=n_splits, shuffle=True, random_state=42)
     accuracy_scores=[]
+
+    num_processes = 10
+    pool = Pool(processes = num_processes)
+
     for train_index, test_index in kf.split(images):
-        start_time = time()
-        vectorExpectedType = []
-        vectorRealType = []
-        train_images=[]
-        for i in train_index:
-            train_images.append(images[i])
+        conjunto_variables = (train_index, test_index, images, target_names, tiempo_total, accuracy_scores)
+        tiempo_y_accuracy=pool.map(calc_split,(conjunto_variables,))
+        (tiempo,accuracy) = tiempo_y_accuracy[0]
+        tiempo_total +=tiempo
+        accuracy_scores.append(accuracy)
 
-        for index in test_index:
-            vectorExpectedType.append(similarityImage(train_images, images[index], featureDetector, descriptorExtractor, diskMatcher))
-            vectorRealType.append(images[index].split("/")[1])
 
-        comprobeResults(vectorRealType, vectorExpectedType, target_names)
-        tiempo_iteracion = time() - start_time
-        tiempo_total+=tiempo_iteracion
-        accuracy_scores.append(accuracy_score(vectorRealType, vectorExpectedType))
-    #Da error al crearlo
     createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher)
 
     '''
@@ -127,8 +122,32 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
         tiempo_total+=tiempo_iteracion
         print "El tiempo total de la ejecucion del programa ha sido: " + str(tiempo_total)
     '''
-    print "El tiempo medio de la ejecucion de las iteraciones ha sido: " + str(tiempo_total/n_splits)
+    print "Mean iterations execution time has been: " + str(tiempo_total/n_splits)
+    print "Total time has been: " + str(tiempo_total)
 
+def calc_split (x):
+    '''metodo para poder hacer la paralelizacion del programa. Esta funcion se ejecuta por cada split de kf (KFold) y calcula todas las comparaciones
+    y los datos referentes a un split, como puede ser la accuracy y nos muestra los datos de hacer la comparacion de las imagenes que tenemos en este split
+    '''
+    (train_index, test_index, images, target_names, tiempo_total, accuracy_scores) = x
+    start_time = time()
+    vectorExpectedType = []
+    vectorRealType = []
+    train_images = []
+    for i in train_index:
+        train_images.append(images[i])
+
+    for index in test_index:
+        vectorExpectedType.append(
+            similarityImage(train_images, images[index], featureDetector, descriptorExtractor, diskMatcher))
+        vectorRealType.append(images[index].split("/")[1])
+
+    comprobeResults(vectorRealType, vectorExpectedType, target_names)
+    tiempo_iteracion = time() - start_time
+    #tiempo_total += tiempo_iteracion
+    #accuracy_scores.append(accuracy_score(vectorRealType, vectorExpectedType))
+    tiempo_y_accuracy=(tiempo_iteracion,accuracy_score(vectorRealType, vectorExpectedType))
+    return tiempo_y_accuracy
 
 def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar y guardar los datos en .csv despues de haber hecho la comparacion de las imagenes
     print "These are the predicted type of the images"
@@ -164,7 +183,7 @@ def createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher
 if __name__ == "__main__":  # Asi se ejecutan los scripts
     ap = argparse.ArgumentParser()
     ap.add_argument("-d", "--disks", required=False, help="Path to the directory that contains our disks",
-                    default="discPrueba")
+                    default="discosSegmented")
     '''
     ap.add_argument("-i", "--image", required=False, help="Path to the image that we want to compare",
                     default="20160602_170338ImgDisk1.tif")
