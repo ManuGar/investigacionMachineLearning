@@ -10,8 +10,6 @@ import cv2
 import pandas as pd
 import os
 
-
-
 #Lo necesitamos poner aqui para que se guarden de forma global todas las imagenes,
 # de la otra forma como se hace referencia de forma recursiva la variable se reinicia cada vez que se mete en una carpeta nueva
 #En esta diccionario guardamos las rutas de las imagenes que han obtenido alto % de coincidencia con la que hemos pasado y el % que tienen.
@@ -45,7 +43,6 @@ def similarityImage(imageVector,img, featureDetector, descriptorExtractor, diskM
     Tenemos en matchIm las 5 imagenes que tienen mas parecido con la que le hemos pasado por parametro.
     Con ello ahora tenemos que decir de que tipo se
     predice que es mirando cual es la clase que mas se repite.
-
     Para eso crearemos un diccionario que tenga la clase como clave y el numero de apariciones como valor, asi devolveremos
     la clave que tenga mayor apariciones
     '''
@@ -72,6 +69,7 @@ momento consigo misma.
 def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     tiempo_total = 0
     n_splits=10
+    num_processes = 10
     di = glob(carp + "/" + "*")  # vemos todo lo que esta adentro del directorio que nos manden
     images=[]
     target_names = []
@@ -93,7 +91,6 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     kf= KFold(n_splits=n_splits, shuffle=True, random_state=42)
     accuracy_scores=[]
 
-    num_processes = 10
     pool = Pool(processes = num_processes)
 
     for train_index, test_index in kf.split(images):
@@ -102,7 +99,6 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
         (tiempo,accuracy) = tiempo_y_accuracy[0]
         tiempo_total +=tiempo
         accuracy_scores.append(accuracy)
-
 
     createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher)
 
@@ -166,7 +162,6 @@ def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar y guardar
     un archivo csv si no estaba creado y si lo estaba aniadirle los datos
     '''
 
-
 def createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher):
     ''' Acumular el accurancy_score en un vector y lo pasamos al csv al final para hacer solo una tarea de entrada/salida
         Los datos se guardan en results y se aniaden a un dataframe que se creamos con la orientacion que necesitamos para
@@ -179,11 +174,10 @@ def createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher
     else:  # else it exists so append without writing the header
         df.to_csv('results.csv', mode='a', header=False)
 
-
 if __name__ == "__main__":  # Asi se ejecutan los scripts
     ap = argparse.ArgumentParser()
     ap.add_argument("-d", "--disks", required=False, help="Path to the directory that contains our disks",
-                    default="discosSegmented")
+                    default="discPrueba")
     '''
     ap.add_argument("-i", "--image", required=False, help="Path to the image that we want to compare",
                     default="20160602_170338ImgDisk1.tif")
@@ -195,4 +189,3 @@ if __name__ == "__main__":  # Asi se ejecutan los scripts
     diskMatcher= "BruteForce-Hamming"
     #Esto es para comprobar si lo que hemos obtenido se acerca a lo que deberiamos obtener
     similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
-
