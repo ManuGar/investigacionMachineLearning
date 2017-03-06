@@ -94,7 +94,8 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     pool = Pool(processes = num_processes)
 
     for train_index, test_index in kf.split(images):
-        conjunto_variables = (train_index, test_index, images, target_names, tiempo_total, accuracy_scores)
+        conjunto_variables = (train_index, test_index, images, target_names, tiempo_total,
+                              accuracy_scores, featureDetector, descriptorExtractor, diskMatcher)
         tiempo_y_accuracy=pool.map(calc_split,(conjunto_variables,))
         (tiempo,accuracy) = tiempo_y_accuracy[0]
         tiempo_total +=tiempo
@@ -122,10 +123,11 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     print "Total time has been: " + str(tiempo_total)
 
 def calc_split (x):
-    '''metodo para poder hacer la paralelizacion del programa. Esta funcion se ejecuta por cada split de kf (KFold) y calcula todas las comparaciones
+    '''Metodo para poder hacer la paralelizacion del programa. Esta funcion se ejecuta por cada split de kf (KFold) y calcula todas las comparaciones
     y los datos referentes a un split, como puede ser la accuracy y nos muestra los datos de hacer la comparacion de las imagenes que tenemos en este split
     '''
-    (train_index, test_index, images, target_names, tiempo_total, accuracy_scores) = x
+    (train_index, test_index, images, target_names, tiempo_total,
+     accuracy_scores, featureDetector, descriptorExtractor, diskMatcher) = x
     start_time = time()
     vectorExpectedType = []
     vectorRealType = []
@@ -145,7 +147,7 @@ def calc_split (x):
     tiempo_y_accuracy=(tiempo_iteracion,accuracy_score(vectorRealType, vectorExpectedType))
     return tiempo_y_accuracy
 
-def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar y guardar los datos en .csv despues de haber hecho la comparacion de las imagenes
+def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar los datos despues de haber hecho la comparacion de las imagenes
     print "These are the predicted type of the images"
     print y_pred
     print("\n")
@@ -177,7 +179,7 @@ def createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher
 if __name__ == "__main__":  # Asi se ejecutan los scripts
     ap = argparse.ArgumentParser()
     ap.add_argument("-d", "--disks", required=False, help="Path to the directory that contains our disks",
-                    default="discPrueba")
+                    default="discosSegmented")
     '''
     ap.add_argument("-i", "--image", required=False, help="Path to the image that we want to compare",
                     default="20160602_170338ImgDisk1.tif")
@@ -187,5 +189,4 @@ if __name__ == "__main__":  # Asi se ejecutan los scripts
     featureDetector="FAST"
     descriptorExtractor="FREAK"
     diskMatcher= "BruteForce-Hamming"
-    #Esto es para comprobar si lo que hemos obtenido se acerca a lo que deberiamos obtener
     similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
