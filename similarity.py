@@ -136,6 +136,7 @@ def calc_split (x):
         train_images.append(images[i])
 
     for index in test_index:
+        print images[index]
         vectorExpectedType.append(
             similarityImage(train_images, images[index], featureDetector, descriptorExtractor, diskMatcher))
         vectorRealType.append(images[index].split("/")[1])
