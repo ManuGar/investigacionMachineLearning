@@ -17,12 +17,19 @@ def similarityImage(imageVector,img, featureDetector, descriptorExtractor, diskM
     matchIm = {}
     maxItems=5 #Este es el numero maximo de elementos que vamos a permitir en el diccionario de los resultados
 
-    dad = DetectAndDescribe(cv2.FeatureDetector_create(featureDetector),
-                            cv2.DescriptorExtractor_create(descriptorExtractor))
+    #cv2.xfeatures2d.
+    #cv2.xfeatures2d.SIFT_create()
+    #cv2.FeatureDetector_create(featureDetector)
+    #cv2.FastFeatureDetector()
+    #
+
+    dad = DetectAndDescribe(cv2.ORB_create(), #Esto habra que cambiarlo por el metodo de la version nueva
+                            cv2.ORB_create()) #Habra que cambiarlo por el metodo de la version nueva
 
     queryImage = cv2.imread(img) #Leemos la imagen pasada como parametro
     (_, _, v) = cv2.split(cv2.cvtColor(queryImage, cv2.COLOR_BGR2HSV))
     (queryKps, queryDescs) = dad.describe(v);  # En v tenemos la imagen que estamos comparando en cada iteracion con el resto de imagenes de la carpeta
+    print(len(queryDescs))
     cv = DiskMatcher(dad, imageVector, diskMatcher) #Comparamos todas las imagenes dentro del vector de imagenes que le pasamos como parametro
     results = cv.search(queryKps, queryDescs); #Guardamos el vector con todos los resultados de la comparacion de la imagen con las de dentro de la carpeta
 
@@ -180,14 +187,10 @@ def createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher
 if __name__ == "__main__":  # Asi se ejecutan los scripts
     ap = argparse.ArgumentParser()
     ap.add_argument("-d", "--disks", required=False, help="Path to the directory that contains our disks",
-                    default="discosSegmented")
-    '''
-    ap.add_argument("-i", "--image", required=False, help="Path to the image that we want to compare",
-                    default="20160602_170338ImgDisk1.tif")
-    '''
+                    default="discPrueba")
+
     args = vars(ap.parse_args())
-    #match=similarityImage(args["disks"], args["image"]);
-    featureDetector="FAST"
-    descriptorExtractor="FREAK"
+    featureDetector="FAST" #cv2.xfeatures2d.SIFT_create()   "FAST"
+    descriptorExtractor="FREAK" #cv2.xfeatures2d.FREAK_create() "FREAK"
     diskMatcher= "BruteForce-Hamming"
     similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)

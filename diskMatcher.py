@@ -38,6 +38,7 @@ class DiskMatcher:
 	def match(self, kpsA, featuresA, kpsB, featuresB, ratio=0.7, minMatches=10):
 		# compute the raw matches and initialize the list of actual
 		# matches
+
 		matcher = cv2.DescriptorMatcher_create(self.matchingmethod)
 		rawMatches = matcher.knnMatch(featuresB, featuresA, 2)
 		matches = []
@@ -63,6 +64,8 @@ class DiskMatcher:
 
 			# return the ratio of the number of matched keypoints
 			# to the total number of keypoints
+			if status is None:
+				return 0
 			return float(status.sum()) / status.size
 
 		# no matches were found
