@@ -23,13 +23,12 @@ def similarityImage(imageVector,img, featureDetector, descriptorExtractor, diskM
     #cv2.FastFeatureDetector()
     #
 
-    dad = DetectAndDescribe(cv2.ORB_create(), #Esto habra que cambiarlo por el metodo de la version nueva
-                            cv2.ORB_create()) #Habra que cambiarlo por el metodo de la version nueva
+    dad = DetectAndDescribe(featureDetector, #Esto habra que cambiarlo por el metodo de la version nueva
+                            descriptorExtractor) #Habra que cambiarlo por el metodo de la version nueva
 
     queryImage = cv2.imread(img) #Leemos la imagen pasada como parametro
     (_, _, v) = cv2.split(cv2.cvtColor(queryImage, cv2.COLOR_BGR2HSV))
     (queryKps, queryDescs) = dad.describe(v);  # En v tenemos la imagen que estamos comparando en cada iteracion con el resto de imagenes de la carpeta
-    print(len(queryDescs))
     cv = DiskMatcher(dad, imageVector, diskMatcher) #Comparamos todas las imagenes dentro del vector de imagenes que le pasamos como parametro
     results = cv.search(queryKps, queryDescs); #Guardamos el vector con todos los resultados de la comparacion de la imagen con las de dentro de la carpeta
 
@@ -143,7 +142,7 @@ def calc_split (x):
         train_images.append(images[i])
 
     for index in test_index:
-        print images[index]
+        #print images[index] #Es para saber con que imagen esta trabajando en cada momento por si da algun error
         vectorExpectedType.append(
             similarityImage(train_images, images[index], featureDetector, descriptorExtractor, diskMatcher))
         vectorRealType.append(images[index].split("/")[1])
@@ -190,7 +189,7 @@ if __name__ == "__main__":  # Asi se ejecutan los scripts
                     default="discPrueba")
 
     args = vars(ap.parse_args())
-    featureDetector="FAST" #cv2.xfeatures2d.SIFT_create()   "FAST"
-    descriptorExtractor="FREAK" #cv2.xfeatures2d.FREAK_create() "FREAK"
+    featureDetector=cv2.ORB_create#cv2.xfeatures2d.SIFT_create()   "FAST"
+    descriptorExtractor=cv2.ORB_create #cv2.xfeatures2d.FREAK_create() "FREAK"
     diskMatcher= "BruteForce-Hamming"
     similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
