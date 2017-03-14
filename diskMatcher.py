@@ -23,7 +23,6 @@ class DiskMatcher:
 
 			# determine the number of matched, inlier keypoints,
 			# then update the results
-
 			score = self.match(queryKps, queryDescs, kps, descs)
 			results[coverPath] = score
 
