@@ -49,8 +49,6 @@ class DiskMatcher:
 			if len(m) == 2 and m[0].distance < m[1].distance * ratio:
 				matches.append((m[0].trainIdx, m[0].queryIdx))
 
-
-
 		# check to see if there are enough matches to process
 		if len(matches) > minMatches:
 			# construct the two sets of points

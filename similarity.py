@@ -22,8 +22,8 @@ def similarityImage(imageVector,img, featureDetector, descriptorExtractor, diskM
     #cv2.FeatureDetector_create(featureDetector)
     #cv2.FastFeatureDetector()
     #
-    dad = DetectAndDescribe(featureDetector, #Esto habra que cambiarlo por el metodo de la version nueva
-                            descriptorExtractor) #Habra que cambiarlo por el metodo de la version nueva
+    dad = DetectAndDescribe(eval(featureDetector), #Esto habra que cambiarlo por el metodo de la version nueva
+                            eval(descriptorExtractor)) #Habra que cambiarlo por el metodo de la version nueva
 
     queryImage = cv2.imread(img) #Leemos la imagen pasada como parametro
     (_, _, v) = cv2.split(cv2.cvtColor(queryImage, cv2.COLOR_BGR2HSV))
@@ -74,8 +74,8 @@ momento consigo misma.
 '''
 def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     total_time = 0
-    n_splits=10
-    num_processes = 10
+    n_splits=3
+    num_processes = 3
     di = glob(carp + "/" + "*")  # vemos todo lo que esta adentro del directorio que nos manden
     images=[]
     target_names = []
@@ -174,7 +174,7 @@ def createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher
         Los datos se guardan en results y se aniaden a un dataframe que se creamos con la orientacion que necesitamos para
         ver mejor todos los datos de las pruebas
     '''
-    results = [(featureDetector + "-" + descriptorExtractor + "-" + diskMatcher , accuracy_scores)]
+    results = [(featureDetector.split(".")[-1] + "-" + descriptorExtractor.split(".")[-1] + "-" + diskMatcher , accuracy_scores)]
     df = pd.DataFrame.from_items(results,orient='index',columns=range(0,len(accuracy_scores)))
     if not os.path.isfile('results.csv'):
         df.to_csv('results.csv')
@@ -185,9 +185,14 @@ if __name__ == "__main__":  # Asi se ejecutan los scripts
     ap = argparse.ArgumentParser()
     ap.add_argument("-d", "--disks", required=False, help="Path to the directory that contains our disks",
                     default="discPrueba")
+    ap.add_argument("-i", "--image", required=False, help="Path of the image we want to compare",
+                    default="discPrueba")
 
     args = vars(ap.parse_args())
-    featureDetector="FAST" #cv2.xfeatures2d.SIFT_create()   "FAST"  cv2.ORB_create()
-    descriptorExtractor="FAST"#cv2.xfeatures2d.FREAK_create() "FREAK"
-    diskMatcher= "BruteForce-Hamming"
+    featureDetector="cv2.ORB_create()" #cv2.xfeatures2d.SIFT_create()   "FAST"  cv2.ORB_create()
+    descriptorExtractor="cv2.ORB_create()"#cv2.xfeatures2d.FREAK_create() "FREAK"
+    diskMatcher= "BruteForce-L1" #BruteForce (it uses L2 ),BruteForce-L1, BruteForce-Hamming, BruteForce-Hamming(2), FlannBased
+    #Esos por lo menos se pueden usar para el metodo descriptorMatcher que esta en diskmatcher
+
+
     similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
