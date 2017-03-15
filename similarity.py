@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from detectanddescribe import DetectAndDescribe
 from diskMatcher import DiskMatcher
 from glob import glob
@@ -22,8 +24,8 @@ def similarityImage(imageVector,img, featureDetector, descriptorExtractor, diskM
     #cv2.FeatureDetector_create(featureDetector)
     #cv2.FastFeatureDetector()
     #
-    dad = DetectAndDescribe(eval(featureDetector), #Esto habra que cambiarlo por el metodo de la version nueva
-                            eval(descriptorExtractor)) #Habra que cambiarlo por el metodo de la version nueva
+    dad = DetectAndDescribe(featureDetector, #Esto habra que cambiarlo por el metodo de la version nueva
+                            descriptorExtractor) #Habra que cambiarlo por el metodo de la version nueva
 
     queryImage = cv2.imread(img) #Leemos la imagen pasada como parametro
     (_, _, v) = cv2.split(cv2.cvtColor(queryImage, cv2.COLOR_BGR2HSV))
@@ -97,15 +99,16 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     kf= KFold(n_splits=n_splits, shuffle=True, random_state=42)
     accuracy_scores=[]
 
-    pool = Pool(processes = num_processes)
+    pool = Pool(num_processes)
 
     for train_index, test_index in kf.split(images):
         conjunto_variables = (train_index, test_index, images, target_names, total_time,
                               accuracy_scores, featureDetector, descriptorExtractor, diskMatcher)
-        time_and_accuracy=pool.map(calc_split,(conjunto_variables,))
+        time_and_accuracy=map(calc_split,(conjunto_variables,))
         (time,accuracy) = time_and_accuracy[0]
         total_time +=time
         accuracy_scores.append(accuracy)
+
 
     createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher)
 
@@ -142,7 +145,7 @@ def calc_split (x):
         train_images.append(images[i])
 
     for index in test_index:
-        #print images[index] #Lo imprimimos para saber en que imagen es la que falla
+        print images[index] #Lo imprimimos para saber en que imagen es la que falla
         vectorExpectedType.append(
             similarityImage(train_images, images[index], featureDetector, descriptorExtractor, diskMatcher))
         vectorRealType.append(images[index].split("/")[1])
@@ -189,10 +192,9 @@ if __name__ == "__main__":  # Asi se ejecutan los scripts
                     default="discPrueba")
 
     args = vars(ap.parse_args())
-    featureDetector="cv2.ORB_create()" #cv2.xfeatures2d.SIFT_create()   "FAST"  cv2.ORB_create()
-    descriptorExtractor="cv2.ORB_create()"#cv2.xfeatures2d.FREAK_create() "FREAK"
-    diskMatcher= "BruteForce-L1" #BruteForce (it uses L2 ),BruteForce-L1, BruteForce-Hamming, BruteForce-Hamming(2), FlannBased
+    featureDetector=cv2.ORB_create() #cv2.xfeatures2d.SIFT_create()   "FAST"  cv2.ORB_create()
+    descriptorExtractor=cv2.ORB_create()#cv2.xfeatures2d.FREAK_create() "FREAK"
+    diskMatcher= "BruteForce-Hamming" #BruteForce (it uses L2 ),BruteForce-L1, BruteForce-Hamming, BruteForce-Hamming(2), FlannBased
     #Esos por lo menos se pueden usar para el metodo descriptorMatcher que esta en diskmatcher
-
 
     similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
