@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-
 from detectanddescribe import DetectAndDescribe
 from diskMatcher import DiskMatcher
 from glob import glob
 from sklearn.metrics import classification_report, confusion_matrix,accuracy_score
 from sklearn.model_selection import train_test_split, KFold
 from time import time
-from multiprocessing import Pool
+from multiprocessing import Pool, Queue, Process
 import argparse
 import cv2
 import pandas as pd
 import os
+
 
 #Lo necesitamos poner aqui para que se guarden de forma global todas las imagenes,
 # de la otra forma como se hace referencia de forma recursiva la variable se reinicia cada vez que se mete en una carpeta nueva
@@ -76,8 +76,8 @@ momento consigo misma.
 '''
 def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     total_time = 0
-    n_splits=3
-    num_processes = 3
+    n_splits=10
+    num_processes = 4
     di = glob(carp + "/" + "*")  # vemos todo lo que esta adentro del directorio que nos manden
     images=[]
     target_names = []
@@ -101,13 +101,26 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
 
     pool = Pool(num_processes)
 
+    def f(q):
+        q.put([42, None, 'hello'])
+
+    q = Queue()
+
+
+
+
+
+
+
     for train_index, test_index in kf.split(images):
         conjunto_variables = (train_index, test_index, images, target_names, total_time,
-                              accuracy_scores, featureDetector, descriptorExtractor, diskMatcher)
-        time_and_accuracy=map(calc_split,(conjunto_variables,))
-        (time,accuracy) = time_and_accuracy[0]
+                              accuracy_scores, featureDetector, descriptorExtractor, diskMatcher, q)
+        p = Process(target=calc_split, args=(conjunto_variables,))
+        p.start()
+        (time, accuracy)= q.get()#pool.map(calc_split,(conjunto_variables,))[0]
         total_time +=time
         accuracy_scores.append(accuracy)
+        p.join()
 
 
     createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher)
@@ -136,7 +149,7 @@ def calc_split (x):
     y los datos referentes a un split, como puede ser la accuracy y nos muestra los datos de hacer la comparacion de las imagenes que tenemos en este split
     '''
     (train_index, test_index, images, target_names, tiempo_total,
-     accuracy_scores, featureDetector, descriptorExtractor, diskMatcher) = x
+     accuracy_scores, featureDetector, descriptorExtractor, diskMatcher, q) = x
     start_time = time()
     vectorExpectedType = []
     vectorRealType = []
@@ -145,15 +158,16 @@ def calc_split (x):
         train_images.append(images[i])
 
     for index in test_index:
-        print images[index] #Lo imprimimos para saber en que imagen es la que falla
+        #print images[index] #Lo imprimimos para saber en que imagen es la que falla
         vectorExpectedType.append(
             similarityImage(train_images, images[index], featureDetector, descriptorExtractor, diskMatcher))
         vectorRealType.append(images[index].split("/")[1])
 
     comprobeResults(vectorRealType, vectorExpectedType, target_names)
     split_time = time() - start_time
-    time_and_accuracy=(split_time,accuracy_score(vectorRealType, vectorExpectedType))
-    return time_and_accuracy
+
+    q.put([split_time,accuracy_score(vectorRealType, vectorExpectedType)])
+    #return (split_time,accuracy_score(vectorRealType, vectorExpectedType))
 
 def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar los datos despues de haber hecho la comparacion de las imagenes
     print "These are the predicted type of the images"
@@ -177,7 +191,7 @@ def createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher
         Los datos se guardan en results y se aniaden a un dataframe que se creamos con la orientacion que necesitamos para
         ver mejor todos los datos de las pruebas
     '''
-    results = [(featureDetector.split(".")[-1] + "-" + descriptorExtractor.split(".")[-1] + "-" + diskMatcher , accuracy_scores)]
+    results = [(str(featureDetector).split(".")[-1] + "-" + str(descriptorExtractor).split(".")[-1]+ "-" + diskMatcher , accuracy_scores)]
     df = pd.DataFrame.from_items(results,orient='index',columns=range(0,len(accuracy_scores)))
     if not os.path.isfile('results.csv'):
         df.to_csv('results.csv')
@@ -189,7 +203,7 @@ if __name__ == "__main__":  # Asi se ejecutan los scripts
     ap.add_argument("-d", "--disks", required=False, help="Path to the directory that contains our disks",
                     default="discPrueba")
     ap.add_argument("-i", "--image", required=False, help="Path of the image we want to compare",
-                    default="discPrueba")
+                    default="discPrueba/AK-30/rot1.tiff")
 
     args = vars(ap.parse_args())
     featureDetector=cv2.ORB_create() #cv2.xfeatures2d.SIFT_create()   "FAST"  cv2.ORB_create()
