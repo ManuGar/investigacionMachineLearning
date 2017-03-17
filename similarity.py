@@ -116,7 +116,9 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
         conjunto_variables = (train_index, test_index, images, target_names, total_time,
                               accuracy_scores, featureDetector, descriptorExtractor, diskMatcher, q)
         p = Process(target=calc_split, args=(conjunto_variables,))
+        p.daemon = True
         p.start()
+
         (time, accuracy)= q.get()#pool.map(calc_split,(conjunto_variables,))[0]
         total_time +=time
         accuracy_scores.append(accuracy)
