@@ -77,7 +77,7 @@ momento consigo misma.
 def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     total_time = 0
     n_splits=10
-    num_processes = 3
+    num_processes = 4
     di = glob(carp + "/" + "*")  # vemos todo lo que esta adentro del directorio que nos manden
     images=[]
     target_names = []
@@ -98,17 +98,17 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     '''
     kf= KFold(n_splits=n_splits, shuffle=True, random_state=42)
     accuracy_scores=[]
-
     pool = Pool(num_processes)
+    splits =[] #En esta variable guardamos las variables de todos los pasos para que luego map pueda ejecutarlas de forma paralela
 
     for train_index, test_index in kf.split(images):
-        conjunto_variables = (train_index, test_index, images, target_names, total_time,
+        varsSet = (train_index, test_index, images, target_names, total_time,
                               accuracy_scores, featureDetector, descriptorExtractor, diskMatcher)
-        time_and_accuracy=pool.map(calc_split,(conjunto_variables,))
-        (time,accuracy) = time_and_accuracy[0]
-        total_time +=time
-        accuracy_scores.append(accuracy)
+        splits.append(varsSet)
 
+    (time,accuracy) = pool.map(calc_split,splits)[0]
+    total_time +=time
+    accuracy_scores.append(accuracy)
 
     createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher)
 
@@ -152,8 +152,7 @@ def calc_split (x):
 
     comprobeResults(vectorRealType, vectorExpectedType, target_names)
     split_time = time() - start_time
-    time_and_accuracy=(split_time,accuracy_score(vectorRealType, vectorExpectedType))
-    return time_and_accuracy
+    return (split_time,accuracy_score(vectorRealType, vectorExpectedType))
 
 def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar los datos despues de haber hecho la comparacion de las imagenes
     print "These are the predicted type of the images"
@@ -190,7 +189,7 @@ if __name__ == "__main__":  # Asi se ejecutan los scripts
                     default="discPrueba")
     ap.add_argument("-i", "--image", required=False, help="Path of the image we want to compare",
                     default="discPrueba")
-
+    tiempo = time()
     args = vars(ap.parse_args())
     featureDetector="cv2.ORB_create()" #cv2.xfeatures2d.SIFT_create()   "FAST"  cv2.ORB_create()
     descriptorExtractor="cv2.ORB_create()"#cv2.xfeatures2d.FREAK_create() "FREAK"
@@ -198,3 +197,6 @@ if __name__ == "__main__":  # Asi se ejecutan los scripts
     #Esos por lo menos se pueden usar para el metodo descriptorMatcher que esta en diskmatcher
 
     similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
+
+    tiempoFinal = time() - tiempo
+    print "este es el tiempo final que ha tardado %s", tiempoFinal
