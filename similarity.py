@@ -6,7 +6,7 @@ from glob import glob
 from sklearn.metrics import classification_report, confusion_matrix,accuracy_score
 from sklearn.model_selection import train_test_split, KFold
 from time import time
-from multiprocessing import Pool
+from multiprocessing import Pool, Queue, Value, Array
 import argparse
 import cv2
 import pandas as pd
@@ -75,7 +75,7 @@ de todas las imagenes del data set. Tendremos que eliminar el caso de comparacio
 momento consigo misma.
 '''
 def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
-    total_time = 0
+
     n_splits=10
     num_processes = 4
     di = glob(carp + "/" + "*")  # vemos todo lo que esta adentro del directorio que nos manden
@@ -97,19 +97,22 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     la comparacion.
     '''
     kf= KFold(n_splits=n_splits, shuffle=True, random_state=42)
-    accuracy_scores=[]
+    accuracy_scores= Array('i', range(10))
+    total_time = Value('d', 0.0)
+
     pool = Pool(num_processes)
     splits =[] #En esta variable guardamos las variables de todos los pasos para que luego map pueda ejecutarlas de forma paralela
-
+    queue = Queue()
     for train_index, test_index in kf.split(images):
-        varsSet = (train_index, test_index, images, target_names, total_time,
-                              accuracy_scores, featureDetector, descriptorExtractor, diskMatcher)
+        varsSet = (train_index, test_index, images, target_names,
+                   featureDetector, descriptorExtractor, diskMatcher, total_time, accuracy_scores)
         splits.append(varsSet)
 
-    (time,accuracy) = pool.map(calc_split,splits)[0]
-    total_time +=time
-    accuracy_scores.append(accuracy)
+    pool.map(calc_split,splits)[0]
 
+    print "hola"
+    print accuracy_scores
+    print "hola de nuevo \n"
     createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher)
 
     '''
@@ -135,8 +138,8 @@ def calc_split (x):
     '''Metodo para poder hacer la paralelizacion del programa. Esta funcion se ejecuta por cada split de kf (KFold) y calcula todas las comparaciones
     y los datos referentes a un split, como puede ser la accuracy y nos muestra los datos de hacer la comparacion de las imagenes que tenemos en este split
     '''
-    (train_index, test_index, images, target_names, tiempo_total,
-     accuracy_scores, featureDetector, descriptorExtractor, diskMatcher) = x
+    (train_index, test_index, images, target_names,
+     featureDetector, descriptorExtractor, diskMatcher, total_time, accuracy_scores) = x
     start_time = time()
     vectorExpectedType = []
     vectorRealType = []
@@ -145,14 +148,16 @@ def calc_split (x):
         train_images.append(images[i])
 
     for index in test_index:
-        print images[index] #Lo imprimimos para saber en que imagen es la que falla
+        #print images[index] #Lo imprimimos para saber en que imagen es la que falla
         vectorExpectedType.append(
             similarityImage(train_images, images[index], featureDetector, descriptorExtractor, diskMatcher))
         vectorRealType.append(images[index].split("/")[1])
 
     comprobeResults(vectorRealType, vectorExpectedType, target_names)
     split_time = time() - start_time
-    return (split_time,accuracy_score(vectorRealType, vectorExpectedType))
+    total_time.value += split_time
+    accuracy_scores.append = accuracy_score(vectorRealType, vectorExpectedType)
+
 
 def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar los datos despues de haber hecho la comparacion de las imagenes
     print "These are the predicted type of the images"
