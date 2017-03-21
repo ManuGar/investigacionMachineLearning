@@ -6,7 +6,7 @@ from glob import glob
 from sklearn.metrics import classification_report, confusion_matrix,accuracy_score
 from sklearn.model_selection import train_test_split, KFold
 from time import time
-from multiprocessing import Pool, Queue, Value, Array
+from multiprocessing import Pool
 import argparse
 import cv2
 import pandas as pd
@@ -97,22 +97,22 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     la comparacion.
     '''
     kf= KFold(n_splits=n_splits, shuffle=True, random_state=42)
-    accuracy_scores= Array('i', range(10))
-    total_time = Value('d', 0.0)
+    accuracy_scores=[]
+    total_time = 0
 
     pool = Pool(num_processes)
     splits =[] #En esta variable guardamos las variables de todos los pasos para que luego map pueda ejecutarlas de forma paralela
-    queue = Queue()
     for train_index, test_index in kf.split(images):
         varsSet = (train_index, test_index, images, target_names,
-                   featureDetector, descriptorExtractor, diskMatcher, total_time, accuracy_scores)
+                   featureDetector, descriptorExtractor, diskMatcher)
         splits.append(varsSet)
 
-    pool.map(calc_split,splits)[0]
+    (time, accuracy)=pool.map(calc_split,splits)[0]
+    total_time+=time
+    accuracy_scores.append(accuracy)
 
-    print "hola"
-    print accuracy_scores
-    print "hola de nuevo \n"
+    print accuracy_scores #Solo añade una de las diez iteraciones, lo que hay que hacer es guardar el resultado en
+    # una cola o hacer que las variables sean compartidas entre procesos
     createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher)
 
     '''
@@ -139,7 +139,7 @@ def calc_split (x):
     y los datos referentes a un split, como puede ser la accuracy y nos muestra los datos de hacer la comparacion de las imagenes que tenemos en este split
     '''
     (train_index, test_index, images, target_names,
-     featureDetector, descriptorExtractor, diskMatcher, total_time, accuracy_scores) = x
+     featureDetector, descriptorExtractor, diskMatcher) = x
     start_time = time()
     vectorExpectedType = []
     vectorRealType = []
@@ -155,8 +155,7 @@ def calc_split (x):
 
     comprobeResults(vectorRealType, vectorExpectedType, target_names)
     split_time = time() - start_time
-    total_time.value += split_time
-    accuracy_scores.append = accuracy_score(vectorRealType, vectorExpectedType)
+    return (split_time, accuracy_score(vectorRealType, vectorExpectedType))
 
 
 def comprobeResults(y_true, y_pred,target_names): #metodo para mostrar los datos despues de haber hecho la comparacion de las imagenes
@@ -194,7 +193,6 @@ if __name__ == "__main__":  # Asi se ejecutan los scripts
                     default="discPrueba")
     ap.add_argument("-i", "--image", required=False, help="Path of the image we want to compare",
                     default="discPrueba")
-    tiempo = time()
     args = vars(ap.parse_args())
     featureDetector="cv2.ORB_create()" #cv2.xfeatures2d.SIFT_create()   "FAST"  cv2.ORB_create()
     descriptorExtractor="cv2.ORB_create()"#cv2.xfeatures2d.FREAK_create() "FREAK"
@@ -202,6 +200,3 @@ if __name__ == "__main__":  # Asi se ejecutan los scripts
     #Esos por lo menos se pueden usar para el metodo descriptorMatcher que esta en diskmatcher
 
     similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
-
-    tiempoFinal = time() - tiempo
-    print "este es el tiempo final que ha tardado %s", tiempoFinal
