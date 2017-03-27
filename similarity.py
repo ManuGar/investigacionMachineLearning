@@ -163,11 +163,17 @@ if __name__ == "__main__":  # Así se ejecutan los scripts
     ap.add_argument("-i", "--image", required=False, help="Path of the image we want to compare",
                     default="discPrueba/AK-30/rot33.tiff")
     args = vars(ap.parse_args())
+    '''
+    Este incluye todas las funciones, hasta las del proyecto aparte
     featureDetectors = ["cv2.ORB_create()","cv2.xfeatures2d.SIFT_create()","cv2.FastFeatureDetector_create()",
                             "cv2.cornerHarris(img,2,3,0.04)","cv2.goodFeaturesToTrack(img,25,0.01,10)",
                             "cv2.HOGDescriptor()", "cv2.xfeatures2d.SURF_create()", "cv2.xfeatures2d.StarDetector_create()",
                             "cv2.MSER_create()"]
-    descriptorExtractors = ["cv2.ORB_create()", ]
+    '''
+    featureDetectors = ["cv2.cornerHarris(img,2,3,0.04)", "cv2.goodFeaturesToTrack(img,25,0.01,10)",
+                        "cv2.FastFeatureDetector_create()", "cv2.ORB_create()", "cv2.HOGDescriptor()", "cv2.MSER_create()"]
+    descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()"]
+    diskMatchers= ["BruteForce-Hamming"]
 
     featureDetector="cv2.ORB_create()"   #"FAST"  cv2.ORB_create()
     descriptorExtractor="cv2.ORB_create()"#cv2.xfeatures2d.FREAK_create() "FREAK"
@@ -177,7 +183,8 @@ if __name__ == "__main__":  # Así se ejecutan los scripts
     # cv2.xfeatures2d.SIFT_create()
     # cv2.FeatureDetector_create(featureDetector)
     # cv2.FastFeatureDetector()
-
+    cv2.xfeatures2d.StarDetector_create()
+    cv2.xfeatures2d.SURF_create()
     start_time = time()
     similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
     total_time = time() - start_time
