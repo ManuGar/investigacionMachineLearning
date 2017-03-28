@@ -10,6 +10,7 @@ import argparse
 import cv2
 import pandas as pd
 import os
+import itertools as it
 
 def similarityImage(imageVector,img, featureDetector, descriptorExtractor, diskMatcher):
     # En esta diccionario guardamos las rutas de las imagenes que han obtenido alto % de coincidencia con la que hemos pasado y el % que tienen.
@@ -169,13 +170,20 @@ if __name__ == "__main__":  # Así se ejecutan los scripts
                             "cv2.cornerHarris(img,2,3,0.04)","cv2.goodFeaturesToTrack(img,25,0.01,10)",
                             "cv2.HOGDescriptor()", "cv2.xfeatures2d.SURF_create()", "cv2.xfeatures2d.StarDetector_create()",
                             "cv2.MSER_create()"]
-    '''
-    featureDetectors = ["cv2.cornerHarris(img,2,3,0.04)", "cv2.goodFeaturesToTrack(img,25,0.01,10)",
-                        "cv2.FastFeatureDetector_create()", "cv2.ORB_create()", "cv2.HOGDescriptor()", "cv2.MSER_create()"]
+    
     descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()"]
-    diskMatchers= ["BruteForce-Hamming"]
 
-    featureDetector="cv2.ORB_create()"   #"FAST"  cv2.ORB_create()
+    "cv2.HOGDescriptor((64, 64), (16, 16), (8, 8), (8, 8), 9, 1, 4.,0, 2.0000000000000001e-01, 0, 64)"
+    "cv2.cornerHarris(img,2,3,0.04)","cv2.goodFeaturesToTrack(img,25,0.01,10)"
+
+    '''
+    featureDetectors = ["cv2.FastFeatureDetector_create()", "cv2.ORB_create()", "cv2.HOGDescriptor()", "cv2.MSER_create()",
+                        "cv2.cornerHarris(img,2,3,0.04)", "cv2.goodFeaturesToTrack(img,25,0.01,10)"]
+    descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()"]
+    diskMatchers= ["BruteForce-Hamming","BruteForce", "BruteForce-L1", "BruteForce-Hamming(2)","FlannBased"]
+
+
+    featureDetector="cv2.HOGDescriptor()"   #"FAST"  cv2.ORB_create()
     descriptorExtractor="cv2.ORB_create()"#cv2.xfeatures2d.FREAK_create() "FREAK"
     diskMatcher= "BruteForce-Hamming" #BruteForce (it uses L2 ),BruteForce-L1, BruteForce-Hamming, BruteForce-Hamming(2), FlannBased
     #Esos por lo menos se pueden usar para el metodo descriptorMatcher que esta en diskmatcher
@@ -183,11 +191,14 @@ if __name__ == "__main__":  # Así se ejecutan los scripts
     # cv2.xfeatures2d.SIFT_create()
     # cv2.FeatureDetector_create(featureDetector)
     # cv2.FastFeatureDetector()
-    cv2.xfeatures2d.StarDetector_create()
-    cv2.xfeatures2d.SURF_create()
-    start_time = time()
-    similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
-    total_time = time() - start_time
-    print "Execution time: ", total_time
 
+    '''
+    for elemento in it.product(featureDetectors, descriptorExtractors,diskMatchers):
+        print(elemento)
+        start_time = time()
+        similarityDataSet(args["disks"], elemento[0], elemento[1], elemento[2])
+        total_time = time() - start_time
+        print "Execution time: ", total_time
+    '''
+    similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
 
