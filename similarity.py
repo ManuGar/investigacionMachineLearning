@@ -11,16 +11,26 @@ import cv2
 import pandas as pd
 import os
 import itertools as it
+import numpy as np
 
 def similarityImage(imageVector,img, featureDetector, descriptorExtractor, diskMatcher):
     # En esta diccionario guardamos las rutas de las imagenes que han obtenido alto % de coincidencia con la que hemos pasado y el % que tienen.
     matchIm = {}
     maxItems=5 #Este es el numero maximo de elementos que vamos a permitir en el diccionario de los resultados
-    dad = DetectAndDescribe(eval(featureDetector),
-                            eval(descriptorExtractor)) #Creamos un objeto DetectAndDescribe (creado por Jónathan) al que le pasamos los objetos
-    # que describen y detectan los puntos clave de la imagen
+    queryImage = cv2.imread(img)  # Leemos la imagen pasada como parametro
+    if(featureDetector == "cv2.cornerHarris()"):
+        #img,2,3,0.04
+        dad = DetectAndDescribe(cv2.cornerHarris(np.float32(queryImage),2,3,0.04) ,
+                                eval(descriptorExtractor))
+    elif(featureDetector == "cv2.goodFeaturesToTrack()"):
+        dad = DetectAndDescribe(cv2.goodFeaturesToTrack(np.float32(queryImage), 25, 0.01, 10),
+                                eval(descriptorExtractor))
+    else:
+        dad = DetectAndDescribe(eval(featureDetector),
+                                eval(descriptorExtractor))  # Creamos un objeto DetectAndDescribe (creado por Jónathan) al que le pasamos los objetos
+        # que describen y detectan los puntos clave de la imagen
 
-    queryImage = cv2.imread(img) #Leemos la imagen pasada como parametro
+
     (_, _, v) = cv2.split(cv2.cvtColor(queryImage, cv2.COLOR_BGR2HSV))
     (queryKps, queryDescs) = dad.describe(v);  # En v tenemos la imagen que estamos comparando en cada iteracion con el resto de imagenes de la carpeta
     cv = DiskMatcher(dad, imageVector, diskMatcher) #Comparamos todas las imagenes dentro del vector de imagenes que le pasamos como parametro
@@ -119,7 +129,7 @@ def calculate_split (x):
         train_images.append(images[i])
 
     for index in test_index:
-        #print images[index] #Lo imprimimos para saber en que imagen esta el programa en un momento determinado
+        print images[index] #Lo imprimimos para saber en que imagen esta el programa en un momento determinado
         vectorExpectedType.append(
             similarityImage(train_images, images[index], featureDetector, descriptorExtractor, diskMatcher))
         vectorRealType.append(images[index].split("/")[1])
@@ -131,7 +141,6 @@ def calculate_split (x):
 def comprobeResults(y_true, y_pred,target_names): #método para mostrar los datos después de haber hecho la comparación de las imágenes
     print "These are the predicted type of the images"
     print y_pred
-    print("\n")
     print "These are the real type of the images"
     print y_true
     classi_rep=classification_report(y_true, y_pred, target_names=target_names)
@@ -173,32 +182,30 @@ if __name__ == "__main__":  # Así se ejecutan los scripts
     
     descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()"]
 
-    "cv2.HOGDescriptor((64, 64), (16, 16), (8, 8), (8, 8), 9, 1, 4.,0, 2.0000000000000001e-01, 0, 64)"
     "cv2.cornerHarris(img,2,3,0.04)","cv2.goodFeaturesToTrack(img,25,0.01,10)"
-
+    
     '''
-    featureDetectors = ["cv2.FastFeatureDetector_create()", "cv2.ORB_create()", "cv2.HOGDescriptor()", "cv2.MSER_create()",
-                        "cv2.cornerHarris(img,2,3,0.04)", "cv2.goodFeaturesToTrack(img,25,0.01,10)"]
+    featureDetectors = ["cv2.AKAZE_create()","cv2.FastFeatureDetector_create()", "cv2.ORB_create()",
+                        "cv2.MSER_create()","cv2.cornerHarris()","cv2.goodFeaturesToTrack()"
+                        ]
     descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()"]
-    diskMatchers= ["BruteForce-Hamming","BruteForce", "BruteForce-L1", "BruteForce-Hamming(2)","FlannBased"]
+    diskMatchers= ["BruteForce-Hamming","BruteForce", "BruteForce-L1", "BruteForce-Hamming(2)"]
 
+    featureDetector="cv2.xfeatures2d.SIFT_create()"
+    descriptorExtractor="cv2.xfeatures2d.SIFT_create()" # "cv2.HOGDescriptor(img)"
+    diskMatcher= "BruteForce-Hamming"
 
-    featureDetector="cv2.HOGDescriptor()"   #"FAST"  cv2.ORB_create()
-    descriptorExtractor="cv2.ORB_create()"#cv2.xfeatures2d.FREAK_create() "FREAK"
-    diskMatcher= "BruteForce-Hamming" #BruteForce (it uses L2 ),BruteForce-L1, BruteForce-Hamming, BruteForce-Hamming(2), FlannBased
-    #Esos por lo menos se pueden usar para el metodo descriptorMatcher que esta en diskmatcher
-    # cv2.xfeatures2d.
-    # cv2.xfeatures2d.SIFT_create()
-    # cv2.FeatureDetector_create(featureDetector)
-    # cv2.FastFeatureDetector()
-
-    '''
     for elemento in it.product(featureDetectors, descriptorExtractors,diskMatchers):
         print(elemento)
         start_time = time()
         similarityDataSet(args["disks"], elemento[0], elemento[1], elemento[2])
         total_time = time() - start_time
         print "Execution time: ", total_time
+
     '''
+    init_time = time()
     similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
+    total_time =time() - init_time
+    print "Execuction time (s): ", total_time
+    '''
 
