@@ -5,7 +5,7 @@ from glob import glob
 from sklearn.metrics import classification_report, confusion_matrix,accuracy_score
 from sklearn.model_selection import train_test_split, KFold
 from time import time
-from multiprocessing import Pool, Manager
+from multiprocessing import Pool, Manager,cpu_count
 import argparse
 import cv2
 import pandas as pd
@@ -18,18 +18,9 @@ def similarityImage(imageVector,img, featureDetector, descriptorExtractor, diskM
     matchIm = {}
     maxItems=5 #Este es el numero maximo de elementos que vamos a permitir en el diccionario de los resultados
     queryImage = cv2.imread(img)  # Leemos la imagen pasada como parametro
-    if(featureDetector == "cv2.cornerHarris()"):
-        #img,2,3,0.04
-        dad = DetectAndDescribe(cv2.cornerHarris(np.float32(queryImage),2,3,0.04) ,
-                                eval(descriptorExtractor))
-    elif(featureDetector == "cv2.goodFeaturesToTrack()"):
-        dad = DetectAndDescribe(cv2.goodFeaturesToTrack(np.float32(queryImage), 25, 0.01, 10),
-                                eval(descriptorExtractor))
-    else:
-        dad = DetectAndDescribe(eval(featureDetector),
+    dad = DetectAndDescribe(eval(featureDetector),
                                 eval(descriptorExtractor))  # Creamos un objeto DetectAndDescribe (creado por Jónathan) al que le pasamos los objetos
         # que describen y detectan los puntos clave de la imagen
-
 
     (_, _, v) = cv2.split(cv2.cvtColor(queryImage, cv2.COLOR_BGR2HSV))
     (queryKps, queryDescs) = dad.describe(v);  # En v tenemos la imagen que estamos comparando en cada iteracion con el resto de imagenes de la carpeta
@@ -77,7 +68,7 @@ momento consigo misma.
 '''
 def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     n_splits=10
-    num_processes = 4
+    num_processes = cpu_count()
     di = glob(carp + "/" + "*")  # vemos todo lo que está dentro del directorio que nos manden
     images=[]
     target_names = []
@@ -86,11 +77,9 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
         images+=(glob(j + "/" + "*"))
 
     target_names.append("Error")
-
     '''
     Para hacer la prueba 10 veces lo que podemos es hacer es crear un bucle que vaya de uno a diez o mediante
     la funcion Kfold de sklearn
-
     Con Kfold es un poco mas largo pero parece un poco mas rapido tambien. Con esto lo que hacemos es generar
     un vector con los indices que queremos en entrenamiento y las que queremos en test. Luego creamos un vector
     de las imagenes de entrenamiento a partir de los indices y recorremos el vector de las de test para hacer
@@ -100,8 +89,8 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     accuracy_scores=[]
     pool = Pool(num_processes)
     splits =[] #En esta variable guardamos las variables de todos los pasos para que luego map pueda ejecutarlas de forma paralela
-    manager = Manager()
-    queue = manager.Queue()
+    manager = Manager() #Objeto que nos permite crear una cola con para compartir los datos entre los procesos
+    queue = manager.Queue() #Creamos una cola donde guardaremos los accuracy que vayan dejando los procesos que ya se hayan ejecutado
     for train_index, test_index in kf.split(images):
         varsSet = (train_index, test_index, images, target_names,
                    featureDetector, descriptorExtractor, diskMatcher,queue)
@@ -127,7 +116,6 @@ def calculate_split (x):
     train_images = []
     for i in train_index:
         train_images.append(images[i])
-
     for index in test_index:
         print images[index] #Lo imprimimos para saber en que imagen esta el programa en un momento determinado
         vectorExpectedType.append(
@@ -166,6 +154,18 @@ def createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher
     else:  # else it exists so append without writing the header
         df.to_csv('results.csv', mode='a', header=False)
 
+def createCSVTime(totalTime, featureDetector, descriptorExtractor, diskMatcher):
+    ''' Generamos otro CSV pero para guardar en este caso los tiempos de ejecución de cada uno de los métodos.
+        Guardamos únicamente el tiempo que le ha costado en total a cada método, es decir, que se guardará el tiempo que
+        le haya costado ejecutar todas las iteraciones que tengamos configuradas para el conjunto de estos 3 parámetros
+    '''
+    results = [(str(featureDetector).split(".")[-1] + "-" + str(descriptorExtractor).split(".")[-1] + "-" + diskMatcher, [totalTime])] #revisarlo que da problemas
+    df = pd.DataFrame.from_items(results,orient='index',columns=["Time(s)"])
+    if not os.path.isfile('times.csv'):
+        df.to_csv('times.csv')
+    else:  # else it exists so append without writing the header
+        df.to_csv('times.csv', mode='a', header=False)
+
 if __name__ == "__main__":  # Así se ejecutan los scripts
     ap = argparse.ArgumentParser()
     ap.add_argument("-d", "--disks", required=False, help="Path to the directory that contains our disks",
@@ -175,37 +175,44 @@ if __name__ == "__main__":  # Así se ejecutan los scripts
     args = vars(ap.parse_args())
     '''
     Este incluye todas las funciones, hasta las del proyecto aparte
-    featureDetectors = ["cv2.ORB_create()","cv2.xfeatures2d.SIFT_create()","cv2.FastFeatureDetector_create()",
-                            "cv2.cornerHarris(img,2,3,0.04)","cv2.goodFeaturesToTrack(img,25,0.01,10)",
-                            "cv2.HOGDescriptor()", "cv2.xfeatures2d.SURF_create()", "cv2.xfeatures2d.StarDetector_create()",
-                            "cv2.MSER_create()"]
+    featureDetectors = ["cv2.ORB_create()","cv2.AKAZE_create()", "cv2.FastFeatureDetector_create()",
+    "cv2.MSER_create()","cv2.xfeatures2d.SIFT_create()","cv2.xfeatures2d.SURF_create()", 
+    "cv2.xfeatures2d.StarDetector_create()", "cv2.xfeatures2d.MSDDetector_create()"
+    ] 
+    descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()",
+    "cv2.xfeatures2d.BriefDescriptorExtractor_create()", "cv2.xfeatures2d.FREAK_create()","cv2.xfeatures2d.SURF_create()",
+    "cv2.xfeatures2d.SIFT_create()"]
     
-    descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()"]
+    cv2.xfeatures2d.BriefDescriptorExtractor_create()#Debería estar 
+    cv2.xfeatures2d.DAISY_create() #No esta???
+    cv2.xfeatures2d.MSDDetector_create() #También debería estar 
+              
+    diskMatchers= ["BruteForce-Hamming","BruteForce", "BruteForce-L1", "BruteForce-Hamming(2)", "FlannBased"]
 
-    "cv2.cornerHarris(img,2,3,0.04)","cv2.goodFeaturesToTrack(img,25,0.01,10)"
-    
     '''
-    featureDetectors = ["cv2.AKAZE_create()","cv2.FastFeatureDetector_create()", "cv2.ORB_create()",
-                        "cv2.MSER_create()","cv2.cornerHarris()","cv2.goodFeaturesToTrack()"
-                        ]
-    descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()"]
+    featureDetectors = ["cv2.BRISK_create()", "cv2.AgastFeatureDetector_create()", "cv2.AKAZE_create()",
+                        "cv2.FastFeatureDetector_create()", "cv2.ORB_create()", "cv2.MSER_create()"]
+    descriptorExtractors = ["cv2.AKAZE_create()", "cv2.ORB_create()", "cv2.BRISK_create()" ]
     diskMatchers= ["BruteForce-Hamming","BruteForce", "BruteForce-L1", "BruteForce-Hamming(2)"]
-
     featureDetector="cv2.xfeatures2d.SIFT_create()"
     descriptorExtractor="cv2.xfeatures2d.SIFT_create()" # "cv2.HOGDescriptor(img)"
     diskMatcher= "BruteForce-Hamming"
-
     for elemento in it.product(featureDetectors, descriptorExtractors,diskMatchers):
-        print(elemento)
-        start_time = time()
-        similarityDataSet(args["disks"], elemento[0], elemento[1], elemento[2])
-        total_time = time() - start_time
-        print "Execution time: ", total_time
+        try:
+            print(elemento)
+            start_time = time()
+            similarityDataSet(args["disks"], elemento[0], elemento[1], elemento[2])
+            total_time = time() - start_time
+            print "Execution time: ", total_time
+            createCSVTime(total_time,elemento[0],elemento[1],elemento[2])
+        except:
+            createCSV(["Combinación no compatible"],elemento[0],elemento[1],elemento[2])
+            createCSVTime("Combinación no compatible",elemento[0],elemento[1],elemento[2])
 
     '''
     init_time = time()
     similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
     total_time =time() - init_time
     print "Execuction time (s): ", total_time
+    createCSVTime(total_time,featureDetector,descriptorExtractor,diskMatcher)
     '''
-
