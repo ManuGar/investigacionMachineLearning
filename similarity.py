@@ -122,11 +122,11 @@ def calculate_split (x):
             similarityImage(train_images, images[index], featureDetector, descriptorExtractor, diskMatcher))
         vectorRealType.append(images[index].split("/")[1])
 
-    comprobeResults(vectorRealType, vectorExpectedType, target_names)
+    printResults(vectorRealType, vectorExpectedType, target_names)
     queue.put(accuracy_score(vectorRealType, vectorExpectedType))
     return (accuracy_score(vectorRealType, vectorExpectedType))
 
-def comprobeResults(y_true, y_pred,target_names): #método para mostrar los datos después de haber hecho la comparación de las imágenes
+def printResults(y_true, y_pred,target_names): #método para mostrar los datos después de haber hecho la comparación de las imágenes
     print "These are the predicted type of the images"
     print y_pred
     print "These are the real type of the images"
@@ -190,13 +190,15 @@ if __name__ == "__main__":  # Así se ejecutan los scripts
     diskMatchers= ["BruteForce-Hamming","BruteForce", "BruteForce-L1", "BruteForce-Hamming(2)", "FlannBased"]
 
     '''
-    featureDetectors = ["cv2.BRISK_create()", "cv2.AgastFeatureDetector_create()", "cv2.AKAZE_create()",
-                        "cv2.FastFeatureDetector_create()", "cv2.ORB_create()", "cv2.MSER_create()"]
-    descriptorExtractors = ["cv2.AKAZE_create()", "cv2.ORB_create()", "cv2.BRISK_create()" ]
-    diskMatchers= ["BruteForce-Hamming","BruteForce", "BruteForce-L1", "BruteForce-Hamming(2)"]
-    featureDetector="cv2.xfeatures2d.SIFT_create()"
-    descriptorExtractor="cv2.xfeatures2d.SIFT_create()" # "cv2.HOGDescriptor(img)"
-    diskMatcher= "BruteForce-Hamming"
+    featureDetectors = ["cv2.ORB_create()","cv2.MSER_create()","cv2.BRISK_create()", "cv2.AgastFeatureDetector_create()", "cv2.AKAZE_create()",
+                        "cv2.FastFeatureDetector_create()"]
+    descriptorExtractors = ["cv2.ORB_create()","cv2.BRISK_create()","cv2.AKAZE_create()"]
+    diskMatchers= ["BruteForce-L1" ,"BruteForce-Hamming(2)", "BruteForce-Hamming","BruteForce"]
+
+    featureDetector='cv2.ORB_create()'
+    descriptorExtractor='cv2.ORB_create()'
+    diskMatcher= 'BruteForce-L1'
+
     for elemento in it.product(featureDetectors, descriptorExtractors,diskMatchers):
         try:
             print(elemento)
