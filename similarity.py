@@ -165,51 +165,45 @@ def createCSVTime(totalTime, featureDetector, descriptorExtractor, diskMatcher):
         df.to_csv('times.csv')
     else:  # else it exists so append without writing the header
         df.to_csv('times.csv', mode='a', header=False)
-
-if __name__ == "__main__":  # Así se ejecutan los scripts
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-d", "--disks", required=False, help="Path to the directory that contains our disks",
-                    default="discPrueba")
-    ap.add_argument("-i", "--image", required=False, help="Path of the image we want to compare",
-                    default="discPrueba/AK-30/rot33.tiff")
-    args = vars(ap.parse_args())
+def executeCombinations(folder):
     '''
-    Este incluye todas las funciones, hasta las del proyecto aparte
-    featureDetectors = ["cv2.ORB_create()","cv2.AKAZE_create()", "cv2.FastFeatureDetector_create()",
-    "cv2.MSER_create()","cv2.xfeatures2d.SIFT_create()","cv2.xfeatures2d.SURF_create()", 
-    "cv2.xfeatures2d.StarDetector_create()", "cv2.xfeatures2d.MSDDetector_create()"
-    ] 
-    descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()",
-    "cv2.xfeatures2d.BriefDescriptorExtractor_create()", "cv2.xfeatures2d.FREAK_create()","cv2.xfeatures2d.SURF_create()",
-    "cv2.xfeatures2d.SIFT_create()"]
-    
-    cv2.xfeatures2d.BriefDescriptorExtractor_create()#Debería estar 
-    cv2.xfeatures2d.DAISY_create() #No esta???
-    cv2.xfeatures2d.MSDDetector_create() #También debería estar 
-              
-    diskMatchers= ["BruteForce-Hamming","BruteForce", "BruteForce-L1", "BruteForce-Hamming(2)", "FlannBased"]
+        Este incluye todas las funciones, hasta las del proyecto aparte
+        featureDetectors = ["cv2.ORB_create()","cv2.AKAZE_create()", "cv2.FastFeatureDetector_create()",
+        "cv2.MSER_create()","cv2.xfeatures2d.SIFT_create()","cv2.xfeatures2d.SURF_create()", 
+        "cv2.xfeatures2d.StarDetector_create()", "cv2.xfeatures2d.MSDDetector_create()"
+        ] 
+        descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()",
+        "cv2.xfeatures2d.BriefDescriptorExtractor_create()", "cv2.xfeatures2d.FREAK_create()","cv2.xfeatures2d.SURF_create()",
+        "cv2.xfeatures2d.SIFT_create()"]
+
+        cv2.xfeatures2d.BriefDescriptorExtractor_create()#Debería estar 
+        cv2.xfeatures2d.DAISY_create() #No esta???
+        cv2.xfeatures2d.MSDDetector_create() #También debería estar 
+
+        diskMatchers= ["BruteForce-Hamming","BruteForce", "BruteForce-L1", "BruteForce-Hamming(2)", "FlannBased"]
 
     '''
-    featureDetectors = ["cv2.ORB_create()","cv2.MSER_create()","cv2.BRISK_create()", "cv2.AgastFeatureDetector_create()", "cv2.AKAZE_create()",
+    featureDetectors = ["cv2.ORB_create()", "cv2.MSER_create()", "cv2.BRISK_create()",
+                        "cv2.AgastFeatureDetector_create()", "cv2.AKAZE_create()",
                         "cv2.FastFeatureDetector_create()"]
-    descriptorExtractors = ["cv2.ORB_create()","cv2.BRISK_create()","cv2.AKAZE_create()"]
-    diskMatchers= ["BruteForce-L1" ,"BruteForce-Hamming(2)", "BruteForce-Hamming","BruteForce"]
+    descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()"]
+    diskMatchers = ["BruteForce-L1", "BruteForce-Hamming(2)", "BruteForce-Hamming", "BruteForce"]
 
-    featureDetector='cv2.ORB_create()'
-    descriptorExtractor='cv2.ORB_create()'
-    diskMatcher= 'BruteForce-L1'
+    featureDetector = 'cv2.ORB_create()'
+    descriptorExtractor = 'cv2.ORB_create()'
+    diskMatcher = 'BruteForce-L1'
 
-    for elemento in it.product(featureDetectors, descriptorExtractors,diskMatchers):
+    for elemento in it.product(featureDetectors, descriptorExtractors, diskMatchers):
         try:
             print(elemento)
             start_time = time()
-            similarityDataSet(args["disks"], elemento[0], elemento[1], elemento[2])
+            similarityDataSet(folder, elemento[0], elemento[1], elemento[2])
             total_time = time() - start_time
             print "Execution time: ", total_time
-            createCSVTime(total_time,elemento[0],elemento[1],elemento[2])
+            createCSVTime(total_time, elemento[0], elemento[1], elemento[2])
         except:
-            createCSV(["Combinación no compatible"],elemento[0],elemento[1],elemento[2])
-            createCSVTime("Combinación no compatible",elemento[0],elemento[1],elemento[2])
+            createCSV(["Combinación no compatible"], elemento[0], elemento[1], elemento[2])
+            createCSVTime("Combinación no compatible", elemento[0], elemento[1], elemento[2])
 
     '''
     init_time = time()
@@ -218,3 +212,13 @@ if __name__ == "__main__":  # Así se ejecutan los scripts
     print "Execuction time (s): ", total_time
     createCSVTime(total_time,featureDetector,descriptorExtractor,diskMatcher)
     '''
+
+if __name__ == "__main__":  # Así se ejecutan los scripts
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-d", "--disks", required=False, help="Path to the directory that contains our disks",
+                    default="datasetPrueba")
+    ap.add_argument("-i", "--image", required=False, help="Path of the image we want to compare",
+                    default="discPrueba/AK-30/rot33.tiff")
+    args = vars(ap.parse_args())
+
+    executeCombinations(args["disks"])
