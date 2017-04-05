@@ -11,7 +11,7 @@ import cv2
 import pandas as pd
 import os
 import itertools as it
-import numpy as np
+import gc
 
 def similarityImage(imageVector,img, featureDetector, descriptorExtractor, diskMatcher):
     # En esta diccionario guardamos las rutas de las imagenes que han obtenido alto % de coincidencia con la que hemos pasado y el % que tienen.
@@ -68,7 +68,7 @@ momento consigo misma.
 '''
 def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     n_splits=10
-    num_processes = cpu_count()
+    num_processes = 28#cpu_count()
     di = glob(carp + "/" + "*")  # vemos todo lo que está dentro del directorio que nos manden
     images=[]
     target_names = []
@@ -95,6 +95,8 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
         varsSet = (train_index, test_index, images, target_names,
                    featureDetector, descriptorExtractor, diskMatcher,queue)
         splits.append(varsSet)
+
+    del images, test_index, train_index
     pool.map(calculate_split,splits)
     queue.put('DONE') #Para decirle al bucle cuando acabar y salir
     while True:
@@ -131,12 +133,9 @@ def printResults(y_true, y_pred,target_names): #método para mostrar los datos d
     print y_pred
     print "These are the real type of the images"
     print y_true
-    classi_rep=classification_report(y_true, y_pred, target_names=target_names)
-    print(classi_rep)
-    conf_mat=confusion_matrix(y_true, y_pred, labels=target_names)
-    print conf_mat
-    print "\n"
-    print accuracy_score(y_true,y_pred),"\n"
+    print classification_report(y_true, y_pred, target_names=target_names)
+    print confusion_matrix(y_true, y_pred, labels=target_names)
+    print "\n",accuracy_score(y_true,y_pred),"\n"
     '''
     Con esto conseguimos guardar todos los datos en una estructura de pandas y una vez tenemos la estructura lo que hacemos es crear
     un archivo csv si no estaba creado y si lo estaba añadirle los datos
@@ -186,14 +185,16 @@ def executeCombinations(folder):
     featureDetectors = ["cv2.ORB_create()", "cv2.MSER_create()", "cv2.BRISK_create()",
                         "cv2.AgastFeatureDetector_create()", "cv2.AKAZE_create()",
                         "cv2.FastFeatureDetector_create()"]
-    descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()"]
+    descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()","cv2.AKAZE_create()" ]
     diskMatchers = ["BruteForce-L1", "BruteForce-Hamming(2)", "BruteForce-Hamming", "BruteForce"]
 
-    featureDetector = 'cv2.ORB_create()'
-    descriptorExtractor = 'cv2.ORB_create()'
-    diskMatcher = 'BruteForce-L1'
+    #featureDetector = 'cv2.ORB_create()'
+    #descriptorExtractor = 'cv2.ORB_create()'
+    #diskMatcher = 'BruteForce-L1'
 
     for elemento in it.product(featureDetectors, descriptorExtractors, diskMatchers):
+        gc.collect()
+        del gc.garbage[:]
         try:
             print(elemento)
             start_time = time()
@@ -201,7 +202,11 @@ def executeCombinations(folder):
             total_time = time() - start_time
             print "Execution time: ", total_time
             createCSVTime(total_time, elemento[0], elemento[1], elemento[2])
-        except:
+
+        except Exception as inst:
+            print(type(inst))  # la instancia de excepción
+            print(inst.args)  # argumentos guardados en .args
+            print(str(inst)+ "\n")
             createCSV(["Combinación no compatible"], elemento[0], elemento[1], elemento[2])
             createCSVTime("Combinación no compatible", elemento[0], elemento[1], elemento[2])
 
@@ -220,5 +225,5 @@ if __name__ == "__main__":  # Así se ejecutan los scripts
     ap.add_argument("-i", "--image", required=False, help="Path of the image we want to compare",
                     default="discPrueba/AK-30/rot33.tiff")
     args = vars(ap.parse_args())
-
+    gc.enable()
     executeCombinations(args["disks"])
