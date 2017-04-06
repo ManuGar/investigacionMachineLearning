@@ -11,7 +11,6 @@ import cv2
 import pandas as pd
 import os
 import itertools as it
-import gc
 
 def similarityImage(imageVector,img, featureDetector, descriptorExtractor, diskMatcher):
     # En esta diccionario guardamos las rutas de las imagenes que han obtenido alto % de coincidencia con la que hemos pasado y el % que tienen.
@@ -96,9 +95,9 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
                    featureDetector, descriptorExtractor, diskMatcher,queue)
         splits.append(varsSet)
 
-    del images, test_index, train_index
     pool.map(calculate_split,splits)
     queue.put('DONE') #Para decirle al bucle cuando acabar y salir
+    pool.close()
     while True:
         result = queue.get()
         if (result == 'DONE'):
@@ -192,23 +191,20 @@ def executeCombinations(folder):
     #descriptorExtractor = 'cv2.ORB_create()'
     #diskMatcher = 'BruteForce-L1'
 
-    for elemento in it.product(featureDetectors, descriptorExtractors, diskMatchers):
-        gc.collect()
-        del gc.garbage[:]
+    for (featureDetectors, descriptorExtractors, diskMatchers) in it.product(featureDetectors, descriptorExtractors, diskMatchers):
         try:
-            print(elemento)
+            print(featureDetectors, descriptorExtractors, diskMatchers)
             start_time = time()
-            similarityDataSet(folder, elemento[0], elemento[1], elemento[2])
+            similarityDataSet(folder, featureDetectors, descriptorExtractors, diskMatchers)
             total_time = time() - start_time
             print "Execution time: ", total_time
-            createCSVTime(total_time, elemento[0], elemento[1], elemento[2])
-
+            createCSVTime(total_time, featureDetectors, descriptorExtractors, diskMatchers)
         except Exception as inst:
             print(type(inst))  # la instancia de excepción
             print(inst.args)  # argumentos guardados en .args
             print(str(inst)+ "\n")
-            createCSV(["Combinación no compatible"], elemento[0], elemento[1], elemento[2])
-            createCSVTime("Combinación no compatible", elemento[0], elemento[1], elemento[2])
+            createCSV(["Combinación no compatible"], featureDetectors, descriptorExtractors, diskMatchers)
+            createCSVTime("Combinación no compatible", featureDetectors, descriptorExtractors, diskMatchers)
 
     '''
     init_time = time()
@@ -225,5 +221,4 @@ if __name__ == "__main__":  # Así se ejecutan los scripts
     ap.add_argument("-i", "--image", required=False, help="Path of the image we want to compare",
                     default="discPrueba/AK-30/rot33.tiff")
     args = vars(ap.parse_args())
-    gc.enable()
     executeCombinations(args["disks"])
