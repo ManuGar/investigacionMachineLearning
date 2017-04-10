@@ -67,7 +67,7 @@ momento consigo misma.
 '''
 def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     n_splits=10
-    num_processes = 28#cpu_count()
+    num_processes = 1#cpu_count()
     di = glob(carp + "/" + "*")  # vemos todo lo que está dentro del directorio que nos manden
     images=[]
     target_names = []
@@ -77,12 +77,9 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
 
     target_names.append("Error")
     '''
-    Para hacer la prueba 10 veces lo que podemos es hacer es crear un bucle que vaya de uno a diez o mediante
-    la funcion Kfold de sklearn
-    Con Kfold es un poco mas largo pero parece un poco mas rapido tambien. Con esto lo que hacemos es generar
-    un vector con los indices que queremos en entrenamiento y las que queremos en test. Luego creamos un vector
-    de las imagenes de entrenamiento a partir de los indices y recorremos el vector de las de test para hacer
-    la comparacion.
+    Con esto lo que hacemos es generar un vector con los indices que queremos en entrenamiento y las que queremos 
+    en test. Luego creamos un vector de las imagenes de entrenamiento a partir de los indices y recorremos el vector
+    de las de test para hacer la comparacion.
     '''
     kf= KFold(n_splits=n_splits, shuffle=True, random_state=42)
     accuracy_scores=[]
@@ -96,8 +93,8 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
         splits.append(varsSet)
 
     pool.map(calculate_split,splits)
-    queue.put('DONE') #Para decirle al bucle cuando acabar y salir
     pool.close()
+    queue.put('DONE') #Para decirle al bucle cuando acabar y salir
     while True:
         result = queue.get()
         if (result == 'DONE'):
@@ -163,6 +160,8 @@ def createCSVTime(totalTime, featureDetector, descriptorExtractor, diskMatcher):
         df.to_csv('times.csv')
     else:  # else it exists so append without writing the header
         df.to_csv('times.csv', mode='a', header=False)
+
+
 def executeCombinations(folder):
     '''
         Este incluye todas las funciones, hasta las del proyecto aparte
@@ -192,12 +191,12 @@ def executeCombinations(folder):
     #diskMatcher = 'BruteForce-L1'
 
     for (featureDetectors, descriptorExtractors, diskMatchers) in it.product(featureDetectors, descriptorExtractors, diskMatchers):
+        print(featureDetectors, descriptorExtractors, diskMatchers)
+        start_time = time()
         try:
-            print(featureDetectors, descriptorExtractors, diskMatchers)
-            start_time = time()
             similarityDataSet(folder, featureDetectors, descriptorExtractors, diskMatchers)
             total_time = time() - start_time
-            print "Execution time: ", total_time
+            print "Execution time(s): ", total_time
             createCSVTime(total_time, featureDetectors, descriptorExtractors, diskMatchers)
         except Exception as inst:
             print(type(inst))  # la instancia de excepción
