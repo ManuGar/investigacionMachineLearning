@@ -67,7 +67,7 @@ momento consigo misma.
 '''
 def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     n_splits=10
-    num_processes = 1#cpu_count()
+    num_processes = 4#cpu_count()
     di = glob(carp + "/" + "*")  # vemos todo lo que está dentro del directorio que nos manden
     images=[]
     target_names = []
@@ -145,9 +145,9 @@ def createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher
     results = [(str(featureDetector).split(".")[-1] + "-" + str(descriptorExtractor).split(".")[-1] + "-" + diskMatcher , accuracy_scores)]
     df = pd.DataFrame.from_items(results,orient='index',columns=range(0,len(accuracy_scores)))
     if not os.path.isfile('results.csv'):
-        df.to_csv('results.csv')
+        df.to_csv('results.csv', encoding='utf-8')
     else:  # else it exists so append without writing the header
-        df.to_csv('results.csv', mode='a', header=False)
+        df.to_csv('results.csv', mode='a', header=False,encoding='utf-8')
 
 def createCSVTime(totalTime, featureDetector, descriptorExtractor, diskMatcher):
     ''' Generamos otro CSV pero para guardar en este caso los tiempos de ejecución de cada uno de los métodos.
@@ -157,9 +157,9 @@ def createCSVTime(totalTime, featureDetector, descriptorExtractor, diskMatcher):
     results = [(str(featureDetector).split(".")[-1] + "-" + str(descriptorExtractor).split(".")[-1] + "-" + diskMatcher, [totalTime])] #revisarlo que da problemas
     df = pd.DataFrame.from_items(results,orient='index',columns=["Time(s)"])
     if not os.path.isfile('times.csv'):
-        df.to_csv('times.csv')
+        df.to_csv('times.csv',encoding='utf-8')
     else:  # else it exists so append without writing the header
-        df.to_csv('times.csv', mode='a', header=False)
+        df.to_csv('times.csv', mode='a', header=False,encoding='utf-8')
 
 
 def executeCombinations(folder):
