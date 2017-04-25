@@ -19,7 +19,7 @@ def similarityImage(imageVector,img, featureDetector, descriptorExtractor, diskM
     queryImage = cv2.imread(img)  # Leemos la imagen pasada como parametro
     dad = DetectAndDescribe(eval(featureDetector),
                                 eval(descriptorExtractor))  # Creamos un objeto DetectAndDescribe (creado por Jónathan) al que le pasamos los objetos
-        # que describen y detectan los puntos clave de la imagen
+        # que detectan los puntos clave de la imagen y recoge los descriptores a partir de esos puntos clave
 
     (_, _, v) = cv2.split(cv2.cvtColor(queryImage, cv2.COLOR_BGR2HSV))
     (queryKps, queryDescs) = dad.describe(v);  # En v tenemos la imagen que estamos comparando en cada iteracion con el resto de imagenes de la carpeta
