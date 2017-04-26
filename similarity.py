@@ -165,13 +165,13 @@ def createCSVTime(totalTime, featureDetector, descriptorExtractor, diskMatcher):
 def executeCombinations(folder):
 
         #Este incluye todas las funciones, hasta las del proyecto aparte
-    featureDetectors = ["cv2.ORB_create()","cv2.AKAZE_create()", "cv2.FastFeatureDetector_create()",
-        "cv2.MSER_create()","cv2.xfeatures2d.SIFT_create()","cv2.xfeatures2d.SURF_create()", 
-        "cv2.xfeatures2d.StarDetector_create()"]
+    featureDetectors = ["cv2.xfeatures2d.StarDetector_create()", "cv2.ORB_create()","cv2.AKAZE_create()",
+                        "cv2.FastFeatureDetector_create()","cv2.MSER_create()","cv2.xfeatures2d.SIFT_create()",
+                        "cv2.xfeatures2d.SURF_create()"]
 
-    descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()",
-        "cv2.xfeatures2d.BriefDescriptorExtractor_create()", "cv2.xfeatures2d.FREAK_create()","cv2.xfeatures2d.SURF_create()",
-        "cv2.xfeatures2d.SIFT_create()"]
+    descriptorExtractors = ["cv2.xfeatures2d.SIFT_create()", "cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()",
+        "cv2.xfeatures2d.BriefDescriptorExtractor_create()", "cv2.xfeatures2d.FREAK_create()","cv2.xfeatures2d.SURF_create()"
+        ]
 
     diskMatchers = ["BruteForce-Hamming", "BruteForce", "BruteForce-L1", "BruteForce-Hamming(2)", "FlannBased"]
 
@@ -203,8 +203,8 @@ def executeCombinations(folder):
             print(type(inst))  # la instancia de excepción
             print(inst.args)  # argumentos guardados en .args
             print(str(inst)+ "\n")
-            createCSV(["Combinación no compatible"], featureDetectors, descriptorExtractors, diskMatchers)
-            createCSVTime("Combinación no compatible", featureDetectors, descriptorExtractors, diskMatchers)
+            #createCSV(["Combinación no compatible"], featureDetectors, descriptorExtractors, diskMatchers)
+            #createCSVTime("Combinación no compatible", featureDetectors, descriptorExtractors, diskMatchers)
 
     '''
     init_time = time()
