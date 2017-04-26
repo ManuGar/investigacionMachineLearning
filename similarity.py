@@ -163,29 +163,30 @@ def createCSVTime(totalTime, featureDetector, descriptorExtractor, diskMatcher):
 
 
 def executeCombinations(folder):
-    '''
-        Este incluye todas las funciones, hasta las del proyecto aparte
-        featureDetectors = ["cv2.ORB_create()","cv2.AKAZE_create()", "cv2.FastFeatureDetector_create()",
+
+        #Este incluye todas las funciones, hasta las del proyecto aparte
+    featureDetectors = ["cv2.ORB_create()","cv2.AKAZE_create()", "cv2.FastFeatureDetector_create()",
         "cv2.MSER_create()","cv2.xfeatures2d.SIFT_create()","cv2.xfeatures2d.SURF_create()", 
-        "cv2.xfeatures2d.StarDetector_create()", "cv2.xfeatures2d.MSDDetector_create()"
-        ] 
-        descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()",
+        "cv2.xfeatures2d.StarDetector_create()"]
+
+    descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()",
         "cv2.xfeatures2d.BriefDescriptorExtractor_create()", "cv2.xfeatures2d.FREAK_create()","cv2.xfeatures2d.SURF_create()",
         "cv2.xfeatures2d.SIFT_create()"]
 
+    diskMatchers = ["BruteForce-Hamming", "BruteForce", "BruteForce-L1", "BruteForce-Hamming(2)", "FlannBased"]
+
+    '''
         cv2.xfeatures2d.BriefDescriptorExtractor_create()#Debería estar 
         cv2.xfeatures2d.DAISY_create() #No esta???
         cv2.xfeatures2d.MSDDetector_create() #También debería estar 
-
-        diskMatchers= ["BruteForce-Hamming","BruteForce", "BruteForce-L1", "BruteForce-Hamming(2)", "FlannBased"]
-
-    '''
+    
     featureDetectors = ["cv2.ORB_create()", "cv2.MSER_create()", "cv2.BRISK_create()",
                         "cv2.AgastFeatureDetector_create()", "cv2.AKAZE_create()",
                         "cv2.FastFeatureDetector_create()"]
     descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()","cv2.AKAZE_create()" ]
     diskMatchers = ["BruteForce-L1", "BruteForce-Hamming(2)", "BruteForce-Hamming", "BruteForce"]
 
+    '''
     #featureDetector = 'cv2.ORB_create()'
     #descriptorExtractor = 'cv2.ORB_create()'
     #diskMatcher = 'BruteForce-L1'
