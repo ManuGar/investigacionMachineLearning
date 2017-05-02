@@ -5,7 +5,7 @@ from glob import glob
 from sklearn.metrics import classification_report, confusion_matrix,accuracy_score
 from sklearn.model_selection import train_test_split, KFold
 from time import time
-from multiprocessing import Pool, Manager,cpu_count
+from multiprocessing import Pool, Manager,cpu_count, Process
 import argparse
 import cv2
 import pandas as pd
@@ -83,7 +83,7 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     '''
     kf= KFold(n_splits=n_splits, shuffle=True, random_state=42)
     accuracy_scores=[]
-    pool = Pool(num_processes)
+    pool = [] #Pool(num_processes)
     splits =[] #En esta variable guardamos las variables de todos los pasos para que luego map pueda ejecutarlas de forma paralela
     manager = Manager() #Objeto que nos permite crear una cola con para compartir los datos entre los procesos
     queue = manager.Queue() #Creamos una cola donde guardaremos los accuracy que vayan dejando los procesos que ya se hayan ejecutado
@@ -91,9 +91,23 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
         varsSet = (train_index, test_index, images, target_names,
                    featureDetector, descriptorExtractor, diskMatcher,queue)
         splits.append(varsSet)
+        pool.append(Process(target=calculate_split, args=(varsSet,)))
 
-    pool.map(calculate_split,splits)
-    pool.close()
+
+    for p in pool:
+        p.start()
+
+    while pool:
+        for p in pool:
+            if not p.is_alive():
+                p.join
+                pool.remove(p)
+                del(p)
+
+
+    #pool.map(calculate_split,splits)
+    #pool.close()
+    #pool.terminate()
     queue.put('DONE') #Para decirle al bucle cuando acabar y salir
     while True:
         result = queue.get()
@@ -165,7 +179,7 @@ def createCSVTime(totalTime, featureDetector, descriptorExtractor, diskMatcher):
 def executeCombinations(folder):
 
         #Este incluye todas las funciones, hasta las del proyecto aparte
-    featureDetectors = ["cv2.xfeatures2d.StarDetector_create()", "cv2.ORB_create()","cv2.AKAZE_create()",
+    featureDetectors = [ "cv2.xfeatures2d.StarDetector_create()", "cv2.ORB_create()", "cv2.AKAZE_create()",
                         "cv2.FastFeatureDetector_create()","cv2.MSER_create()","cv2.xfeatures2d.SIFT_create()",
                         "cv2.xfeatures2d.SURF_create()"]
 
