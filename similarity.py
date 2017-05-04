@@ -5,12 +5,42 @@ from glob import glob
 from sklearn.metrics import classification_report, confusion_matrix,accuracy_score
 from sklearn.model_selection import train_test_split, KFold
 from time import time
-from multiprocessing import Pool, Manager,cpu_count, Process
+from multiprocessing import Manager, Process
+import multiprocessing as mp
 import argparse
 import cv2
 import pandas as pd
 import os
 import itertools as it
+import traceback
+
+
+
+'''
+Como los procesos por defecto no pueden lanzar excepciones, se ha heredado de la clase Process para 
+implementar de alguna forma la forma de saber que ha habido una excepción durante la ejecución del proceso.
+Con esta clase, ya podremos saberlo y seguir lanzando la excepción hasta donde nosotros queremos.
+'''
+class Process(mp.Process):
+    def __init__(self, *args, **kwargs):
+        mp.Process.__init__(self, *args, **kwargs)
+        self._pconn, self._cconn = mp.Pipe()
+        self._exception = None
+
+    def run(self):
+        try:
+            mp.Process.run(self)
+            self._cconn.send(None)
+        except Exception as e:
+            tb = traceback.format_exc()
+            self._cconn.send((e, tb))
+            # raise e  # You can still rise this exception if you need to
+
+    @property
+    def exception(self):
+        if self._pconn.poll():
+            self._exception = self._pconn.recv()
+        return self._exception
 
 def similarityImage(imageVector,img, featureDetector, descriptorExtractor, diskMatcher):
     # En esta diccionario guardamos las rutas de las imagenes que han obtenido alto % de coincidencia con la que hemos pasado y el % que tienen.
@@ -67,7 +97,6 @@ momento consigo misma.
 '''
 def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
     n_splits=10
-    num_processes = 4#cpu_count()
     di = glob(carp + "/" + "*")  # vemos todo lo que está dentro del directorio que nos manden
     images=[]
     target_names = []
@@ -93,7 +122,6 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
         splits.append(varsSet)
         pool.append(Process(target=calculate_split, args=(varsSet,)))
 
-
     for p in pool:
         p.start()
 
@@ -101,13 +129,11 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
         for p in pool:
             if not p.is_alive():
                 p.join
+                if p.exception:
+                    raise Exception
                 pool.remove(p)
                 del(p)
 
-
-    #pool.map(calculate_split,splits)
-    #pool.close()
-    #pool.terminate()
     queue.put('DONE') #Para decirle al bucle cuando acabar y salir
     while True:
         result = queue.get()
@@ -115,7 +141,7 @@ def similarityDataSet(carp, featureDetector, descriptorExtractor, diskMatcher):
             break
         else:
             accuracy_scores.append(result)
-    createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher)
+    createCSV("results.csv",accuracy_scores, featureDetector, descriptorExtractor, diskMatcher)
 
 def calculate_split (x):
     '''Metodo para poder hacer la paralelizacion del programa. Esta funcion se ejecuta por cada split de kf (KFold) y calcula todas las comparaciones
@@ -151,34 +177,32 @@ def printResults(y_true, y_pred,target_names): #método para mostrar los datos d
     un archivo csv si no estaba creado y si lo estaba añadirle los datos
     '''
 
-def createCSV(accuracy_scores, featureDetector, descriptorExtractor, diskMatcher):
+def createCSV(name,accuracy_scores, featureDetector, descriptorExtractor, diskMatcher):
     ''' Acumular el accurancy_score en un vector y lo pasamos al csv al final para hacer solo una tarea de entrada/salida
         Los datos se guardan en results y se añaden a un dataframe que se creamos con la orientación que necesitamos para
         ver mejor todos los datos de las pruebas
     '''
     results = [(str(featureDetector).split(".")[-1] + "-" + str(descriptorExtractor).split(".")[-1] + "-" + diskMatcher , accuracy_scores)]
     df = pd.DataFrame.from_items(results,orient='index',columns=range(0,len(accuracy_scores)))
-    if not os.path.isfile('results.csv'):
-        df.to_csv('results.csv', encoding='utf-8')
+    if not os.path.isfile(name):
+        df.to_csv(name, encoding='utf-8')
     else:  # else it exists so append without writing the header
-        df.to_csv('results.csv', mode='a', header=False,encoding='utf-8')
+        df.to_csv(name, mode='a', header=False,encoding='utf-8')
 
-def createCSVTime(totalTime, featureDetector, descriptorExtractor, diskMatcher):
+def createCSVTime(name,totalTime, featureDetector, descriptorExtractor, diskMatcher):
     ''' Generamos otro CSV pero para guardar en este caso los tiempos de ejecución de cada uno de los métodos.
         Guardamos únicamente el tiempo que le ha costado en total a cada método, es decir, que se guardará el tiempo que
         le haya costado ejecutar todas las iteraciones que tengamos configuradas para el conjunto de estos 3 parámetros
     '''
     results = [(str(featureDetector).split(".")[-1] + "-" + str(descriptorExtractor).split(".")[-1] + "-" + diskMatcher, [totalTime])] #revisarlo que da problemas
     df = pd.DataFrame.from_items(results,orient='index',columns=["Time(s)"])
-    if not os.path.isfile('times.csv'):
-        df.to_csv('times.csv',encoding='utf-8')
+    if not os.path.isfile(name):
+        df.to_csv(name,encoding='utf-8')
     else:  # else it exists so append without writing the header
-        df.to_csv('times.csv', mode='a', header=False,encoding='utf-8')
-
+        df.to_csv(name, mode='a', header=False,encoding='utf-8')
 
 def executeCombinations(folder):
 
-        #Este incluye todas las funciones, hasta las del proyecto aparte
     featureDetectors = [ "cv2.xfeatures2d.StarDetector_create()", "cv2.ORB_create()", "cv2.AKAZE_create()",
                         "cv2.FastFeatureDetector_create()","cv2.MSER_create()","cv2.xfeatures2d.SIFT_create()",
                         "cv2.xfeatures2d.SURF_create()"]
@@ -190,20 +214,20 @@ def executeCombinations(folder):
     diskMatchers = ["BruteForce-Hamming", "BruteForce", "BruteForce-L1", "BruteForce-Hamming(2)", "FlannBased"]
 
     '''
-        cv2.xfeatures2d.BriefDescriptorExtractor_create()#Debería estar 
         cv2.xfeatures2d.DAISY_create() #No esta???
         cv2.xfeatures2d.MSDDetector_create() #También debería estar 
-    
-    featureDetectors = ["cv2.ORB_create()", "cv2.MSER_create()", "cv2.BRISK_create()",
-                        "cv2.AgastFeatureDetector_create()", "cv2.AKAZE_create()",
-                        "cv2.FastFeatureDetector_create()"]
-    descriptorExtractors = ["cv2.ORB_create()", "cv2.BRISK_create()","cv2.AKAZE_create()" ]
-    diskMatchers = ["BruteForce-L1", "BruteForce-Hamming(2)", "BruteForce-Hamming", "BruteForce"]
+    '''
 
     '''
-    #featureDetector = 'cv2.ORB_create()'
-    #descriptorExtractor = 'cv2.ORB_create()'
-    #diskMatcher = 'BruteForce-L1'
+    featureDetector = 'cv2.ORB_create()'
+    descriptorExtractor = 'cv2.ORB_create()'
+    diskMatcher = 'BruteForce-L1'
+    init_time = time()
+    similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
+    total_time =time() - init_time
+    print "Execuction time (s): ", total_time
+    createCSVTime(total_time,featureDetector,descriptorExtractor,diskMatcher)
+    '''
 
     for (featureDetectors, descriptorExtractors, diskMatchers) in it.product(featureDetectors, descriptorExtractors, diskMatchers):
         print(featureDetectors, descriptorExtractors, diskMatchers)
@@ -212,21 +236,13 @@ def executeCombinations(folder):
             similarityDataSet(folder, featureDetectors, descriptorExtractors, diskMatchers)
             total_time = time() - start_time
             print "Execution time(s): ", total_time
-            createCSVTime(total_time, featureDetectors, descriptorExtractors, diskMatchers)
+            createCSVTime("times.csv",total_time, featureDetectors, descriptorExtractors, diskMatchers)
         except Exception as inst:
             print(type(inst))  # la instancia de excepción
             print(inst.args)  # argumentos guardados en .args
             print(str(inst)+ "\n")
-            #createCSV(["Combinación no compatible"], featureDetectors, descriptorExtractors, diskMatchers)
-            #createCSVTime("Combinación no compatible", featureDetectors, descriptorExtractors, diskMatchers)
-
-    '''
-    init_time = time()
-    similarityDataSet(args["disks"], featureDetector, descriptorExtractor, diskMatcher)
-    total_time =time() - init_time
-    print "Execuction time (s): ", total_time
-    createCSVTime(total_time,featureDetector,descriptorExtractor,diskMatcher)
-    '''
+            createCSV("resultsError.csv", ["Combinación no compatible"], featureDetectors, descriptorExtractors, diskMatchers)
+            #createCSVTime("timesError.csv", "Combinación no compatible", featureDetectors, descriptorExtractors, diskMatchers)
 
 if __name__ == "__main__":  # Así se ejecutan los scripts
     ap = argparse.ArgumentParser()
