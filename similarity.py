@@ -203,11 +203,11 @@ def createCSVTime(name,totalTime, featureDetector, descriptorExtractor, diskMatc
 
 def executeCombinations(folder):
 
-    featureDetectors = [ "cv2.xfeatures2d.StarDetector_create()", "cv2.ORB_create()", "cv2.AKAZE_create()",
+    featureDetectors = [ "cv2.ORB_create()", "cv2.xfeatures2d.StarDetector_create()", "cv2.AKAZE_create()",
                         "cv2.FastFeatureDetector_create()","cv2.MSER_create()","cv2.xfeatures2d.SIFT_create()",
                         "cv2.xfeatures2d.SURF_create()"]
 
-    descriptorExtractors = ["cv2.xfeatures2d.SIFT_create()", "cv2.ORB_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()",
+    descriptorExtractors = ["cv2.ORB_create()", "cv2.xfeatures2d.SIFT_create()", "cv2.BRISK_create()", "cv2.AKAZE_create()",
         "cv2.xfeatures2d.BriefDescriptorExtractor_create()", "cv2.xfeatures2d.FREAK_create()","cv2.xfeatures2d.SURF_create()"
         ]
 
