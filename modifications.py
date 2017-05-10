@@ -4,7 +4,7 @@ import cv2
 import argparse
 from os import listdir
 
-rutaCarpetaDefecto="discosSegmented/"
+rutaCarpetaDefecto="dataset/"
 tipoDisco="TOB-10/"
 
 
@@ -20,6 +20,7 @@ cv2.waitKey(0)
 #Esto es para oscurecer las imagenes y modificarlas un poco, en ocasiones la letra se ve mejor.
 #Mediante la ecualizacion del hostograma despues de haber hecho subtract comprobamos como las letras se pueden diferenciar mejor
 
+'''
 i=1;
 for cosa in listdir(rutaCarpetaDefecto+tipoDisco):
     print cosa;
@@ -32,18 +33,21 @@ for cosa in listdir(rutaCarpetaDefecto+tipoDisco):
     cv2.imwrite(rutaCarpetaDefecto + tipoDisco + "subtract"+str(i)  + ".tif", eq);
     #cv2.waitKey(0);
     i+=1;
-
+'''
+''''''
 #Esto es para rotar las fotos
 i=1;
 for cosa in listdir(rutaCarpetaDefecto+tipoDisco):
-    print cosa;
-    image = cv2.imread(rutaCarpetaDefecto+tipoDisco+cosa);
-    rotated = imutils.rotate(image, 30);
-    #cv2.imshow("Rotated by 90 Degrees", rotated);
-    cv2.imwrite(rutaCarpetaDefecto + tipoDisco + "rot"+str(i)  + ".tif", rotated);
-    #cv2.waitKey(0);
-    i+=1;
+    if i <55:
+        print cosa
+        image = cv2.imread(rutaCarpetaDefecto+tipoDisco+cosa)
+        rotated = imutils.rotate(image, 153)
+        #cv2.imshow("Rotated by 90 Degrees", rotated)
+        cv2.imwrite(rutaCarpetaDefecto + tipoDisco + "rot"+str(i)  + ".tif", rotated)
+        #cv2.waitKey(0)
+        i+=1
 
+'''
 #Esto es para hacer translaciones de las imagenes
 i=1;
 for cosa in listdir(rutaCarpetaDefecto+tipoDisco):
@@ -54,3 +58,4 @@ for cosa in listdir(rutaCarpetaDefecto+tipoDisco):
     cv2.imwrite(rutaCarpetaDefecto + tipoDisco + "tras"+str(i)  + ".tif", shifted);
     #cv2.waitKey(0);
     i+=1;
+'''

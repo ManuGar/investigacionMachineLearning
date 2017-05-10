@@ -229,20 +229,45 @@ def executeCombinations(folder):
     createCSVTime(total_time,featureDetector,descriptorExtractor,diskMatcher)
     '''
 
+
+
+    '''
+    Probar si funciona esta parte con los procesos. Lo unico que igual da error es que intenten escribir dos procesos a la vez
+    
+    '''
+    pool = []
     for (featureDetectors, descriptorExtractors, diskMatchers) in it.product(featureDetectors, descriptorExtractors, diskMatchers):
-        print(featureDetectors, descriptorExtractors, diskMatchers)
-        start_time = time()
-        try:
-            similarityDataSet(folder, featureDetectors, descriptorExtractors, diskMatchers)
-            total_time = time() - start_time
-            print "Execution time(s): ", total_time
-            createCSVTime("times.csv",total_time, featureDetectors, descriptorExtractors, diskMatchers)
-        except Exception as inst:
-            print(type(inst))  # la instancia de excepción
-            print(inst.args)  # argumentos guardados en .args
-            print(str(inst)+ "\n")
-            createCSV("resultsError.csv", ["Combinación no compatible"], featureDetectors, descriptorExtractors, diskMatchers)
-            #createCSVTime("timesError.csv", "Combinación no compatible", featureDetectors, descriptorExtractors, diskMatchers)
+        pool.append(Process(target=executeComb, args=(folder,featureDetectors, descriptorExtractors, diskMatchers,)))
+
+    for p in pool:
+            p.start()
+
+    while pool:
+        for p in pool:
+            if not p.is_alive():
+                p.join
+                if p.exception:
+                    raise Exception
+                pool.remove(p)
+                del (p)
+
+
+def executeComb(folder, featureDetector, descriptorExtractor, diskMatcher):
+    print(featureDetector, descriptorExtractor, diskMatcher)
+    start_time = time()
+    try:
+        similarityDataSet(folder, featureDetector, descriptorExtractor, diskMatcher)
+        total_time = time() - start_time
+        print "Execution time(s): ", total_time
+        createCSVTime("times.csv", total_time, featureDetector, descriptorExtractor, diskMatcher)
+    except Exception as inst:
+        print(type(inst))  # la instancia de excepción
+        print(inst.args)  # argumentos guardados en .args
+        print(str(inst) + "\n")
+        createCSV("resultsError.csv", ["Combinación no compatible"], featureDetector, descriptorExtractor,
+                  diskMatcher)
+        # createCSVTime("timesError.csv", "Combinación no compatible", featureDetectors, descriptorExtractors, diskMatchers)
+
 
 if __name__ == "__main__":  # Así se ejecutan los scripts
     ap = argparse.ArgumentParser()
