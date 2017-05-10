@@ -15,7 +15,6 @@ import itertools as it
 import traceback
 
 
-
 '''
 Como los procesos por defecto no pueden lanzar excepciones, se ha heredado de la clase Process para 
 implementar de alguna forma la forma de saber que ha habido una excepción durante la ejecución del proceso.
@@ -203,7 +202,7 @@ def createCSVTime(name,totalTime, featureDetector, descriptorExtractor, diskMatc
 
 def executeCombinations(folder):
 
-    featureDetectors = [ "cv2.ORB_create()", "cv2.xfeatures2d.StarDetector_create()", "cv2.AKAZE_create()",
+    featureDetectors = ["cv2.xfeatures2d.AgastFeatureDetector_create()", "cv2.ORB_create()", "cv2.xfeatures2d.StarDetector_create()", "cv2.AKAZE_create()",
                         "cv2.FastFeatureDetector_create()","cv2.MSER_create()","cv2.xfeatures2d.SIFT_create()",
                         "cv2.xfeatures2d.SURF_create()"]
 
@@ -229,28 +228,8 @@ def executeCombinations(folder):
     createCSVTime(total_time,featureDetector,descriptorExtractor,diskMatcher)
     '''
 
-
-
-    '''
-    Probar si funciona esta parte con los procesos. Lo unico que igual da error es que intenten escribir dos procesos a la vez
-    
-    '''
-    pool = []
-    for (featureDetectors, descriptorExtractors, diskMatchers) in it.product(featureDetectors, descriptorExtractors, diskMatchers):
-        pool.append(Process(target=executeComb, args=(folder,featureDetectors, descriptorExtractors, diskMatchers,)))
-
-    for p in pool:
-            p.start()
-
-    while pool:
-        for p in pool:
-            if not p.is_alive():
-                p.join
-                if p.exception:
-                    raise Exception
-                pool.remove(p)
-                del (p)
-
+    for (featureDetector, descriptorExtractor, diskMatcher) in it.product(featureDetectors, descriptorExtractors, diskMatchers):
+        executeComb(folder,featureDetector,descriptorExtractor, diskMatcher)
 
 def executeComb(folder, featureDetector, descriptorExtractor, diskMatcher):
     print(featureDetector, descriptorExtractor, diskMatcher)
